@@ -1,0 +1,18 @@
+---
+title: "Projects & Research"
+subtitle: "Selected work in embedded systems, reproducible data science, systems programming, and algorithms."
+listing:
+  contents: 
+    - "*.qmd"
+    - "!index.qmd" # Excludes this index page from listing itself
+  type: grid
+  sort: "date desc"
+  categories: true
+  sort-ui: true
+  filter-ui: true
+  fields: [image, date, title, subtitle, categories, reading-time]
+  feed: true
+page-layout: full
+---
+
+A collection of hardware prototypes, systems engineering experiments, and independent software implementations. Use the category tags or search bar below to filter by technology or topic.

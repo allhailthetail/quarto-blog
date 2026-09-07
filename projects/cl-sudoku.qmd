@@ -1,0 +1,133 @@
+---
+title: "Constraint Propagation & Backtracking in Common Lisp"
+subtitle: "Implementing an algorithmic Sudoku solver using functional list processing, recursion, and declarative idioms"
+image: assets/sudoku.png
+date: "2026-03-20"
+categories: [Algorithms, Common Lisp, Functional Programming, Computer Science]
+toc: true
+---
+
+## Project Context & Motivation
+
+[GitHub::cl-sudoku](https://github.com/allhailthetail/cl-sudoku)
+
+Sudoku is a classic constraint-satisfaction problem (CSP); it's also __NP-Complete__, meaning essentially that there are no known direct algorithmic solutions to this puzzle. Rather, for both humans __and__ software, we must rely on heuristics and guess-and-check approaches to solve them. Writing an idiomatic, elegant solver in **Common Lisp** offered an exceptional vehicle for exploring Comp Sci principles of algorithmic recursion, symbolic data representation, and various functional programming paradigms.
+
+I built `cl-sudoku` to move beyond mainstream imperative languages (like Python and C++) and explore how Lisp’s homoiconicity, dynamic typing, and recursive list manipulation simplify search-space exploration. 
+
+The goal was to construct a clean, self-contained solver that models Sudoku boards as symbolic data structures, reduces candidates via constraint propagation, and uses depth-first backtracking search to resolve branch ambiguities.
+
+---
+
+## Representing the Problem Space
+
+In an imperative language, a Sudoku grid is typically modeled as a mutable two-dimensional array (`int[9][9]`). In Lisp, while multi-dimensional arrays exist, representing the board as structured lists or vectors of peer constraints allows us to reason about transformations functionally.
+
+```
++-------+-------+-------+
+| . . 3 | . 2 . | 6 . . |       Board Representation:
+| 9 . . | 3 . 5 | . . 1 |  ---> Flat list / 1D vector (81 cells)
+| . . 1 | 8 . 6 | 4 . . |       - Digits: 1 to 9
++-------+-------+-------+       - Unassigned: NIL or 0
+| . . 8 | 1 . 2 | 9 . . |
+| 7 . . | . . . | . . 8 |
+| . . 6 | 7 . 8 | 2 . . |
++-------+-------+-------+
+| . . 2 | 6 . 9 | 5 . . |
+| 8 . . | 2 . 3 | . . 9 |
+| . . 5 | . 1 . | 3 . . |
++-------+-------+-------+
+```
+
+Every cell index $i \in [0, 80]$ participates in three distinct constraint sets:
+1. **Row peers:** $\lfloor i / 9 \rfloor \times 9 + c$ for $c \in [0, 8]$
+2. **Column peers:** $(r \times 9) + (i \pmod 9)$ for $r \in [0, 8]$
+3. **Box peers:** The $3 \times 3$ subgrid containing index $i$
+
+By precomputing the set of 20 unique "peers" for each of the 81 cell coordinates at load time, constraint checks reduce to set-difference operations over symbols rather than nested loop traversals.
+
+---
+
+## Algorithmic Architecture
+
+The solver uses a two-pronged strategy: deterministic deduction followed by recursive backtracking.
+
+### Constraint Propagation (Naked Singles)
+
+Before venturing into search trees, the solver propagates known values across peer units. If a cell has only one valid candidate remaining given its row, column, and box constraints, that value is assigned immediately. This pruning cascades, often solving easy and moderate puzzles without taking a single speculative branch.
+
+### Heuristic Variable Selection (Minimum Remaining Values)
+
+When deterministic deduction reaches quiescence and speculative branching is necessary, choosing the right cell to guess determines search performance:
+
+* A naive search picks the first open cell index, leading to deep, thrashing subtrees.
+* Instead, the solver employs the **Minimum Remaining Values (MRV)** heuristic (or *most constrained variable*): it chooses the unassigned cell with the fewest legal candidate choices. If a cell has only two possible options, branching on it cuts the branching factor to 2, failing fast if a branch is invalid.
+
+### Recursive Backtracking Search
+
+The backtracking engine is built on pure functional recursion. Rather than mutating global grid state and manually rolling back changes upon encountering an invalid configuration, the function accepts the current board state and returns either a solved board or `NIL`:
+
+```lisp
+(defun solve (board)
+  "Recursively solve the Sudoku BOARD using constraint-driven backtracking."
+  (let ((clean-board (propagate-constraints board)))
+    (cond
+      ((null clean-board) nil)                ;; Conflict encountered; backtrack
+      ((solved-p clean-board) clean-board)    ;; Complete and valid configuration
+      (t
+       ;; Pick cell with fewest candidates (MRV heuristic)
+       (let* ((cell (find-most-constrained-cell clean-board))
+              (candidates (get-legal-candidates clean-board cell)))
+         (some (lambda (val)
+                 (solve (assign clean-board cell val)))
+               candidates))))))
+```
+
+The combination of some with higher-order functions provides a declarative backtracking loop: it attempts candidates sequentially and halts on the first non-NIL solution returned down the call stack.
+
+## Lessons in Common Lisp & Functional Paradigms
+
+Building this project provided several takeaways that carry directly into systems programming and language semantics:
+
+* Elegance of Higher-Order Functions: Replacing index-tracking loops with functions like mapcar, remove-if-not, every, and some produces declarative code where the intent mirrors mathematical definitions.
+* Symbolic vs. Numeric Representation: Manipulating sets of possible values using Lisp symbols and lists provides great flexibility during debugging in the REPL (SLY/SLIME), allowing inspection of intermediate board states without custom serializers.
+* Stack & Recursion Optimization: Profiling recursive search spaces reinforces the importance of tail recursion and managing allocation overhead during state copying.
+* Relevance to Graduate Studies & Computer Science/Artificial Intelligence: Demonstrates practical implementation of fundamental AI concepts: Constraint Satisfaction Problems (CSP), search-space pruning, and variable-ordering heuristics.
+* Declarative & Symbolic Computation: Builds depth in non-imperative computational models, essential for compilers, formal methods, and automated reasoning.
+* Algorithmic Complexity: Illustrates how heuristic selection transforms worst-case exponential time complexity ($9^{81}$) into sub-millisecond execution for practical instances.
+
+---
+
+## Reflections: Is Common Lisp Still the "Language of AI"?
+
+Throughout my coursework, instructors occasionally introduced materials proclaiming Lisp as the quintessential "secret weapon" or the definitive "Language of AI." After spending time writing algorithms in Common Lisp and exploring modern machine learning pipelines, my perspective has evolved past that overstatement. Rather, I feel that LISP remains one of the greatest languages for symbolic and generative computation and has some great use cases where recursion and true Macros are needed in order to solve a problem. I found that several industries either use or have used LISP to great effect in the right use cases. Additionally, Common Lisp has a very friendly community and passionate following. Given that it has its own ANSI standard, it's also a very stable and dependable language on which to gain an understanding of complex programming topics, making for less work that takes place unraveling modern languages which are in a constant state of flux due to ongoing development. 
+
+### 1. LISP is great for exploring "classical AI".
+
+When Lisp earned its reputation as the foundation of AI at MIT, Stanford, and Xerox PARC in the 1970s and 1980s, "Artificial Intelligence" meant **Symbolic AI (Good Old-Fashioned AI / GOFAI)**:
+* Formal logic deduction and rule engines
+* Expert systems and semantic networks
+* Graph search and constraint satisfaction (exactly like Sudoku)
+
+For these domains, Lisp has no equal. Its homoiconicity (code-as-data), powerful macro system, dynamic typing, and interactive image-based REPL allowed early researchers to invent domain-specific languages (DSLs) and manipulate ASTs effortlessly. If AI is defined as manipulating logic symbols and reasoning trees, Lisp earned the title honestly.
+
+Modern AI, however, underwent a seismic shift toward **Connectionist AI**:
+* Deep neural networks, continuous tensor representations, and automatic differentiation
+* Highly parallel matrix math executing across thousands of SIMD/SIMT GPU cores
+* Massive statistical optimization (SGD, Adam) rather than discrete graph traversal
+
+Python didn’t conquer modern machine learning because it is conceptually superior to Lisp; it won because it became the premier high-level glue language wrapping highly optimized C++, CUDA, and BLAS/LAPACK runtimes (PyTorch, TensorFlow, JAX). Lisp’s elegant linked lists and pointer chasing are fundamentally misaligned with contiguous memory layouts, vectorized cache lines, and hardware tensor cores.
+
+### 2. Lisp is the Progenitor of most modern languages
+
+While Common Lisp may no longer dominate industrial AI headlines, almost every breakthrough feature modern languages celebrate was born in the Lisp ecosystem:
+* **Garbage Collection:** Invented by John McCarthy specifically to manage dynamic tree allocations in Lisp.
+* **Dynamic Typing & First-Class Functions:** Pioneered decades before JavaScript or Python made them mainstream.
+* **Interactive Development:** The interactive feedback loop popularized by Jupyter Notebooks is essentially a rudimentary, browser-bound approximation of a true Lisp REPL (like SLIME or SLY).
+* **Metaprogramming:** Few modern languages match the safety and expressive power of Common Lisp's macro system (`defmacro`), which operates on raw S-expressions rather than fragile token streams or complex compiler plugins.
+
+### The Verdict
+
+Is Common Lisp the "Language of AI" today? **Practically speaking, no.** If you are training multi-billion parameter transformer models, fine-tuning diffusion networks, or writing high-throughput tensor operations, Python and C++/CUDA remain the undisputed industry standard.
+
+However, as an educational tool and an intellectual foundation, **learning Lisp changes how you think about computation forever.** I believe this was the core message of most materials we were exposed to during the course, zeal and mysticism aside (though it makes for very entertaining YouTube content). Writing `cl-sudoku` in Common Lisp demonstrated that complex problem domains can be expressed declaratively, recursively, and with startling conciseness. Understanding Lisp demystifies interpreters, abstract syntax trees, and symbolic reasoning—giving an engineer a profound appreciation for what modern frameworks abstract away.

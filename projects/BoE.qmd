@@ -1,0 +1,127 @@
+---
+title: "BoEnanna-Pi: Continuous Servos to Acoustic Signal Processing"
+subtitle: "From building an embedded C++ robotics platform to exploring Morse communications, DSP, and RF fundamentals"
+image: assets/boe-chassis.png
+date: "2025-05-18"
+categories: [Robotics, C++, Embedded Systems, Linux, DSP, Amateur Radio]
+toc: true
+---
+
+## Project Context: Building the Foundation for (a) Vision
+
+A peer was developing a mobile robot intended to navigate autonomously using computer vision, but the platform needed a brain upgrade: an onboard single-board computer capable of running lightweight vision models while maintaining reliable hardware control.
+
+I took ownership of the entire hardware integration layer and motion stack. Beyond writing the software, this meant architecting the physical build from the ground up: sourcing compatible hardware, soldering headers, 3D printing custom mounting brackets, and sizing an isolated onboard battery system. 
+
+On top of the physical platform, I wrote a dependable **C++ driver and motion daemon** to handle hardware timing, calibration, and differential steering under the hood—giving my classmate a clean, decoupled software interface so he could focus entirely on camera pipelines and vision models.
+
+However, as summer's end neared and this project was sunset by my peer, the project took a different direction, and ultimately cascaded into an ongoing learning adventure relating to the topics of digital signal processing and RF communications more broadly. 
+
+---
+
+## Hardware and Driver Development
+
+### System Overview
+
+Transforming a hobbyist chassis into a stable Linux-driven mobile platform required thougtful planning around mechanical constraints, wiring, and electrical isolation:
+
+* **Procurement & Physical Layout:** Selected and sourced the Raspberry Pi, PCA9685 16-channel 12-bit PWM HAT, and continuous rotation servos, laying out the chassis geometry to keep the center of gravity low and stable.
+* **Soldering & Board Prep:** Populated and soldered the multi-pin header arrays on the PWM HAT and custom power leads, ensuring reliable mechanical joints that would reliably deliver signal between the Raspberry Pi board and HAT.
+* **Custom 3D-Printed Mounts:** Procured and printed (additive manufacturing) custom mounting brackets and standoffs to secure the Raspberry Pi, camera module, and battery bank to the aluminum Boe-Bot chassis without shorting against the metal frame.
+* **Power Budgeting & Electrical Isolation:** High-torque servos draw significant stall current and inject inductive electrical noise onto supply rails. To prevent voltage sags from browning out the Raspberry Pi during sudden motor acceleration, I designed around an appropriate power topology with isolated rails:
+  * An onboard high-current 5V USB battery bank dedicated to the Raspberry Pi logic.
+  * An isolated, filtered 5–6V battery supply feeding the high-draw servo power rail on the HAT.
+
+---
+
+### How Continuous Servos Work
+
+Standard hobby servos use internal potentiometers for closed-loop angular positioning ($0^\circ$ to $180^\circ$). Continuous rotation servos remove the mechanical stops and disconnect the potentiometer, turning pulse width into **rotational velocity and direction**:
+
+* **Neutral / Stop ($\approx 1500\ \mu\text{s}$):** Signals the internal H-bridge to stop motor rotation.
+* **Clockwise ($\approx 1000\ \mu\text{s}$):** Full rotational speed in one direction.
+* **Counter-Clockwise ($\approx 2000\ \mu\text{s}$):** Full rotational speed in the opposite direction.
+
+Because potentiometers drift slightly between individual units, software calibration was required to define a consistent "deadband" window around neutral—ensuring the chassis doesn't crawl across the floor while idling.
+
+---
+
+### Interfacing with the Servo HAT in C++
+
+Driving pulse-width modulation directly off standard Linux GPIO pins often results in timing jitter due to OS process scheduling. To ensure clean signals, the servos and camera pan mount are offloaded to an auxiliary **PCA9685 16-channel PWM driver HAT** connected via I²C. During the project, debugging and testing was conducted over WiFi on my home network to the Pi via an SSH terminal. Past experience in CLI-driven Linux was invaluable at this stage of the project. Local development was done on my laptop and successive tests shipped to the bot via [rsync](https://rsync.samba.org/).
+
+### Pulling in System Headers
+
+Rather than pulling in bloated third-party libraries, the C++ driver I wrote for the bot interacts directly with Linux kernel I²C character devices:
+
+* Used `<linux/i2c-dev.h>`, `<sys/ioctl.h>`, and standard POSIX-compatible file calls (`open`, `write`, `close`).
+* Initialized the I²C bus on `/dev/i2c-1` and set the target slave address.
+* Configured the internal oscillator prescaler for a standard **50 Hz PWM frequency** ($20 \text{ms}$ period) and wrote 12-bit channel counter values.
+
+```cpp
+void RobotChassis::driveForward() {
+    setServoPulse(LEFT_SERVO_PIN, 1300);   // Left wheel forward
+    setServoPulse(RIGHT_SERVO_PIN, 1700);  // Right wheel mirrored
+}
+
+void RobotChassis::pivotLeft() {
+    setServoPulse(LEFT_SERVO_PIN, 1700);   // Left wheel reverse
+    setServoPulse(RIGHT_SERVO_PIN, 1700);  // Right wheel forward
+}
+
+void RobotChassis::halt() {
+    setServoPulse(LEFT_SERVO_PIN, CALIBRATED_STOP);
+    setServoPulse(RIGHT_SERVO_PIN, CALIBRATED_STOP);
+}
+```
+Wrapping this inside a clean `C++` driver class provided RAII (Resource Acquisition Is Initialization) resource cleanup on shutdown and prevented runaway motors if an upstream process crashed. The importance of writing safe and stable software when working with robotics became very clear here. In larger industrial projects, a runaway process could have catastrophic consequences. I gained an awareness of RTOS systems and custom compilers that can be mathematically proven to prohibit accidentally writing non-terminating loops, a routine performing infinite recursion, etc.
+
+[GitHub::Chassis Driver Repository](https://github.com/allhailthetail/boenanna-pi)
+
+---
+
+### Driver Demo
+
+Here is a quick run of the driver test sequence in my home lab. The script validates forward/reverse drive, rotational pivots, and camera pan articulation:
+
+{{< video https://youtu.be/iw_Xe_JajT4 >}}
+
+---
+
+## From Motor Signals to Acoustic Radio & DSP
+
+While the robotic platform gave me solid experience with hardware prototyping and kernel I/O, manipulating precise pulse timing sparked a broader question: how can audio signals be used as an intuitive sandbox for learning the fundamentals of wireless digital communications?
+
+RF hardware involves parasitic reactances, impedance matching, and transmission line theory that can obscure algorithmic understanding during initial prototyping (though in subsequent projects I've expanded my knowledge in this domain, also). Audio, by contrast, operates as an accessible physical baseband. Acoustic Continuous Wave (CW / Morse code) is the foundation of digital communications: an asynchronous binary On-Off Keying (OOK) system that achieves near-optimal spectral efficiency in high-noise channels.
+
+From a computer science perspective, Morse code is an early implementation of variable-length prefix coding (conceptually anticipating Huffman coding), where symbol durations inversely correlate with character frequencies in human language.
+
+This realization led directly to my next project: AudioCW, an acoustic transceiver interface designed to explore software-defined signal generation, audio stream manipulation, and symbol decoding.
+
+---
+
+### AudioCW Interface Demo
+
+The interface handles text-to-tone serialization, configurable Words-Per-Minute (WPM) symbol timing, and sidetone pitch adjustment (typically 700 Hz) with live visual feedback:
+
+{{< video https://youtu.be/ZHlFYsn0uYY >}}
+
+[GitHub::Transceiver Repository](https://github.com/allhailthetail/audiocw)
+
+## Key Takeaways & Research Trajectory
+
+* Connecting physical embedded drivers to signal synthesis has broadened my academic trajectory towards future studies in Electrical and Computer Engineering.
+
+* Full-Stack Prototyping: Experience spanning the entire hardware stack - component selection, manual soldering, power isolation, and 3D modeling—up to kernel ioctl calls in `C++`.
+
+* Foundations of Digital Signal Processing: Transitioned from square-wave actuator control to audio frequency synthesis, exploring more deeply concepts relating to radio technology, RF propagation, and filter design.
+
+* Communications & Information Theory: Investigated bandwidth-to-noise tradeoffs and prefix coding in minimalist digital modes.
+
+* FCC Amateur Extra Licensure: Pursuing the electronics and wave propagation principles surrounding this project pushed me to study advanced RF systems, antenna design, and transmission theory, resulting in earning my Amateur Extra Class License that same summer (FCC::AI5YD).
+
+### Vision for this project:
+
+Like many projects, it's hard to gauge completion. This turned out to be a very educational and interesting project with tons of potential. Transmitting audio for digital communication and/or remote sensing with either audible or sub-audible tones is used across many industries and areas of science/development. Similarly, signal processing is especially relevant in speech-to-text AI workflows (see ChatGPT Live, and others); DSP allows voice to be efficiently filtered out from background noise, which translates to less heavy processing by LLMs when receiving user input. 
+
+Any and all of these areas remain relevant to this project, which continues to serve as a "toy example" to learn more about these areas in a stripped down environment. I continue to find that tailored, digestible, hands-on projects such as this make for an interesting vehicle for learning core fundamentals about what I consider to be very complex topics. Once I've sufficiently mastered these topics, I'd very much like to contribute end-to-end hardware projects and code for future learners in this same style.

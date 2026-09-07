@@ -1,0 +1,18 @@
+---
+title: "Posts"
+subtitle: "Shorter field notes and informal write-ups between the bigger projects — amateur radio, electronics, books, and outdoor life."
+listing:
+  contents:
+    - "*.qmd"
+    - "!index.qmd" # Excludes this index page from listing itself
+  type: default
+  sort: "date desc"
+  categories: true
+  sort-ui: true
+  filter-ui: true
+  fields: [date, title, subtitle, categories, reading-time]
+  feed: true
+page-layout: full
+---
+
+A lighter counterpart to [Projects](../projects/index.qmd) — shorter notes that don't warrant a full project write-up. New entries land here as they're written.

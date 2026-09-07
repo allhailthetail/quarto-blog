@@ -1,0 +1,32 @@
+project:
+  type: website
+  resources:
+    - assets/resume.pdf
+
+website:
+  title: "Matthew Younger"
+  #subtitle: "(soon to be) BS/BA Computer Science & Data Science | Systems Engineer"
+  image: assets/profile.jpg
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: about.qmd
+        text: About
+      - href: projects/index.qmd
+        text: Projects
+      - href: posts/index.qmd
+        text: Posts
+      - href: assets/resume.pdf
+        text: Resume
+    right:
+      - icon: github
+        href: https://github.com/allhailthetail
+
+format:
+  html:
+    theme:
+      - sandstone
+      - brand
+    css: styles.css
+    toc: true

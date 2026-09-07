@@ -1,0 +1,39 @@
+---
+title: "Matthew Younger"
+subtitle: "Lead Systems Engineer @ Pulley Management Services, LLC"
+image: assets/profile.jpg
+about:
+  template: trestles
+  image-shape: round
+  image-width: 16em
+  links:
+    - icon: github
+      text: GitHub
+      href: https://github.com/allhailthetail
+    - icon: file-earmark-pdf
+      text: Resume
+      href: assets/resume.pdf
+    - icon: envelope
+      text: Email
+      href: mailto:matthewyounger33@gmail.com
+---
+
+## Welcome
+
+I am an undergraduate researcher and systems practitioner completing double majors in **Computer Science** and **Data Science** (Mathematics minor) at Lyon College.
+
+My work commonly involves an even mix of IT Systems Engineering and Data Science, and AI/ML. My mixed background and interests across a wide variety of subjects lends itself well to working in dynamic, fast-paced environments requiring creative vision and strong procedural thinking.
+
+When I'm not busy configuring servers, analyzing datasets, and solving the next big problem, you'll usually find me reading books, working with radios and electronics, or outdoors with my German Shepherd, Chloe.
+
+I'm currently applying to graduate programs in **Electrical & Computer Engineering**, looking to build formal depth in RF, embedded systems, and hardware design on top of my systems engineering and data science background — much of the hands-on work documented under [Projects](projects/index.qmd) grew directly out of that goal.
+
+---
+
+## Education & Background
+
+* **Lyon College** | Batesville, AR
+  *B.A. in Computer Science & B.S. in Data Science* (Minor in Mathematics)
+  *Expected Graduation: December 2026*
+* **Systems Administration & Engineering**
+  *Background in enterprise Linux administration, networking, and hybrid cloud identity.*

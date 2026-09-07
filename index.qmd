@@ -1,0 +1,41 @@
+---
+title: "Matthew Younger"
+subtitle: "Systems Engineering, Data Science, and RF & Embedded Systems Projects"
+---
+
+## Welcome
+
+Hi, I'm Matthew — an undergraduate researcher and systems practitioner splitting my time between IT systems engineering, data science, and hands-on RF/embedded electronics. This site collects the projects, and occasional field notes, that come out of that mix. Read more [about me](about.qmd), or dig into what I've been building below.
+
+---
+
+## What I'm Currently Working On
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-6}
+### [Research & Technical Work](projects/index.qmd)
+
+* **Systems & Local Inference:** Workstation-scale LLM workflows, containerized services, and Linux systems architecture.
+* **Migrating Production IT Deployments to Cloud-native Management:** ADDS must go, EntraID is here to stay. It's time to migrate, folks... ☺️
+* **Improving Operational Data Integrity with Verkada (R):** Manually tracking employee attendance is tedious! Verkada's AI-enabled cameras are here to help!
+* **Reproducible Computing:** Literate programming (EMACS) and data pipelines combining R, Python, and SQL.
+:::
+
+::: {.g-col-12 .g-col-md-6}
+### [Beyond the Terminal](posts/index.qmd)
+
+* **Current Coursework:** Mathematical Foundations of Computer Science @ Lyon College; Independent Study
+* **Field Notes:** Occasional write-ups on amateur radio, DIY mechanics, and outdoor projects.
+:::
+
+:::
+
+---
+
+## Featured Highlights
+
+* **[QRP CW Transceiver: From Toroids to On-Air Telemetry](projects/qcx-mini.qmd)** — Assembling a discrete-component RF transceiver kit from scratch, hand-building a matching antenna, and confronting the physical realities of RF design.
+* **[Robotics: Retrofitting the BoE Bot for AI](projects/BoE.qmd)** — Exploration of robotics fundamentals and embedded Linux for turbocharging experiments with the BoE educational chassis.
+* **[Morse Code: A Data Science Perspective](projects/cw-data-sci.qmd)** — A semester-long project leveraging Data Science principles (ETL) and Literate Programming techniques to construct a DSP pipeline for analyzing CW.
+* **[Common Lisp: Algorithmic Sudoku Solver](projects/cl-sudoku.qmd)** — Is Common Lisp all McCarthy hoped it'd be? Is Common Lisp "the perfect language for an AI world?" These core questions spurred me to investigate this unique language.

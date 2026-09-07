@@ -1,0 +1,98 @@
+---
+title: "A Literate Pipeline for Morse Code Telemetry & Signal Analysis"
+subtitle: "Building a reproducible data science pipeline to parse, clean, and statistically evaluate acoustic CW transmissions"
+image: assets/cw-key.png
+date: "2025-12-9"
+categories: [Data Science, Literate Programming, R, Python, Signal Processing, Amateur Radio]
+toc: true
+---
+
+## Project Motivation: When Signals Become Data
+
+[*Project Repository:* ](https://github.com/allhailthetail/dsc-105-morse-project/tree/4e25e2f661efe2e8f311e4cc8816aa0af322e77e)
+
+In continuous wave (CW) telegraphy, information is transmitted via discrete pulses of RF [(or acoustic)](BoE.qmd) signals via a meticulously orchestrated sequence of carrier energy. Standing apart as one of the only direct human-digital communication methods that I can think of, these signals are mapped more abstractly to dots, dashes, and intervals of silence. These three symbols essentially compose the language of CW, which can then be used to transmit text-encoded messages over a variety of mediums only limited to the human imagination (see [Jerimiah Denton](https://en.wikipedia.org/wiki/Jeremiah_Denton#Vietnam_War)). While human ears adapt naturally to erratic hand-keying rhythms and atmospheric fading, algorithmic decoders often fail when confronted with real-world timing jitter, drifting speeds, and non-standard spacing.
+
+For a semester-long project in **DSC 105 (Introduction to Data Science)**, I designed an end-to-end data pipeline to ingest, clean, normalize, and analyze Morse code transmission streams. 
+
+Rather than isolating code into disconnected scripts and static notebooks, I implemented the entire workflow using **literate programming** in `EMACS`. The code, statistical transformations, and narrative documentation live in a unified, fully reproducible document—tracing the transformation of raw acoustic timing data into structured distributions and exploratory models.
+
+---
+
+## The Pipeline Architecture
+
+The pipeline ingests raw timing intervals, detects symbol boundaries, identifies transmission anomalies, and models operator rhythm consistency:
+
+```{mermaid}
+%%{init: {'flowchart': {'nodeSpacing': 25, 'rankSpacing': 35, 'curve': 'basis'}, 'themeVariables': {'fontSize': '13px'}}}%%
+flowchart TD
+    A["Raw Transmission Data<br/>(Kaggle Dataset)"]
+    B["Polyglot Data Ingestion W/ EMACS"]
+    C["ETL (R::Seewave)<br/>- Delta timestamp extraction<br/>- Threshold filtering & artifact removal"]
+    D["Structured Dataframe"]
+    E["Statistical Modeling & Analysis<br/>- Dit/Dah clustering<br/>- WPM variance<br/>- Bioacoustic Indices<br/>- FFT<br/>"]
+    F["Rendered Deliverable"]
+    G["Reproducible Academic Report & Visualizations"]
+
+    A --> B --> C --> D --> E --> F --> G
+```
+
+---
+
+## Engineering the Data Pipeline
+
+### The Timing Problem
+
+Under the standard **PARIS** benchmark, ideal Morse transmission follows strict proportional relationships based on a unit duration ($t$):
+
+* **Dit ($\cdot$):** $1t$
+* **Dah ($-$):** $3t$
+* **Intra-character space:** $1t$
+* **Inter-character space:** $3t$
+* **Inter-word space:** $7t$
+
+In practice, physical keys, manual paddles, and atmospheric propagation introduce non-linear variations:
+
+1. **Weighting Bias:** Many operators transmit "heavy" or "light" code, skewing the mathematical $1:3$ dit-to-dah ratio.
+2. **Farnsworth Timing:** Spacing between words or characters often expands while individual element speeds remain fast, confounding simple threshold filters.
+3. **Contact Bounce & Chirp:** Mechanical switches produce spurious microsecond pulses that must be distinguished from genuine dits.
+
+### Cleaning & Feature Engineering
+
+To process these irregular streams, the cleaning step converts raw high/low durations into normalized element arrays:
+
+* **Outlier Truncation:** Drops transients under $10\text{ ms}$ caused by contact chatter or audio interface clipping.
+* **Bimodal Duration Clustering:** Rather than hardcoding millisecond thresholds, the pipeline fits bimodal distributions to separate dits from dahs dynamically, adapting as the effective transmission speed (WPM) drifts across a session.
+* **Ratio Tracking:** Computes rolling moving averages of the element ratio ($\frac{\bar{t}_{\text{dah}}}{\bar{t}_{\text{dit}}}$) to identify operator fatigue and mechanical key misalignments over time.
+
+---
+
+## Reproducibility Through Literate Programming
+
+A core objective was treating data science as an auditable scientific document rather than a collection of ephemeral scripts.
+
+* **Polyglot Execution:** Leveraged literate programming blocks to use the right tool for each phase—fast shell utilities for raw log splitting, Python for parsing state machines, and R (leveraging `tidyverse` and `ggplot2`) for statistical distribution analysis.
+* **Dynamic Dependency Graph:** Data transformations flow strictly from raw inputs to processed tables and output graphics. Changing an upstream filtering threshold automatically recomputes all downstream descriptive statistics and regenerated figures upon compilation.
+* **Executable Documentation:** Methodological explanations sit directly alongside the implementation, making data anomalies traceable down to the specific line of code that parsed them.
+
+---
+
+## Key Findings & Statistical Insights
+
+* **Information Entropy vs. Symbol Duration:** Visualizing the character frequencies against total transmission time provided empirical validation of Morse's prefix-coding efficiency—demonstrating how English character distributions align with minimal symbol weights.
+* **Human Jitter Distributions:** Machine-generated CW exhibited tight, near-Dirac pulse distributions, whereas manual keying generated wide log-normal tails on intra-character spaces—highlighting the exact threshold where software decoders lose symbol framing.
+* **Speed Adaptation:** The pipeline successfully tracked transmission bursts from 12 WPM to 24 WPM without losing symbol demarcation, validating the adaptive clustering approach over static windowing.
+
+---
+
+## Relevance to Future Studies & Systems Engineering
+
+This project reinforced foundational principles across data science, computing, and communications:
+
+* **Reproducible Research Methods:** Mastering literate workflows established rigorous documentation and reproducibility practices essential for graduate-level research publications.
+* **Signal Detection & Classification:** Formulating symbol parsing as a time-series clustering problem directly translates to digital signal processing and machine learning on sensor telemetry.
+* **Information Theory in Practice:** Hands-on exploration of variable-length encoding, symbol timing entropy, and channel noise deepened my theoretical grounding in digital communication systems.
+
+Among academics, there seems to be much interest in literate programming in the AI era. I was honored to have the opportunity to attempt to present all that I learned about literate programming at the University of Oklahoma Data Science Workshop conference, which can be viewed [here](https://mediasite.ou.edu/Mediasite/Channel/odsw/watch/19f27b09eff948989e0cd6a8754681a61d?sortBy=most-recent), accompanying follow-along tutorial [here](https://allhailthetail.github.io/polyglot-workshop/). It was highly unusual to allow an undergraduate student speak at these conferences, which alone speaks to the interest in the topic. My interpretation is that since AI currently communicates fluently in Markdown and plaintext, doing research in that same style and avoiding compiled files (DOCX, Excel, PDF, etc) in the project's main phase makes using AI as a research tool more feasible. I very much enjoyed presenting on this topic and gaining much-needed experience in public speaking.
+
+---
