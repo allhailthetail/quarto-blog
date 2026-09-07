@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-02">
+
+<title>Assembling a QRP CW Transceiver: From Toroids to On-Air Telemetry – Matthew Younger</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-bcaea1afbde5c3fcfe46a7eae4a52071.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Matthew Younger</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../projects/index.html"> 
+<span class="menu-text">Projects</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../posts/index.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../assets/resume.pdf"> 
+<span class="menu-text">Resume</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/allhailthetail"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#project-overview-the-heavy-hitter" id="toc-project-overview-the-heavy-hitter" class="nav-link active" data-scroll-target="#project-overview-the-heavy-hitter">Project Overview: The Heavy Hitter</a></li>
+  <li><a href="#video-guide-build-postmortem" id="toc-video-guide-build-postmortem" class="nav-link" data-scroll-target="#video-guide-build-postmortem">Video Guide &amp; Build Postmortem</a></li>
+  <li><a href="#key-hardware-assembly-challenges" id="toc-key-hardware-assembly-challenges" class="nav-link" data-scroll-target="#key-hardware-assembly-challenges">Key Hardware &amp; Assembly Challenges</a>
+  <ul class="collapse">
+  <li><a href="#toroid-winding-enamel-stripping" id="toc-toroid-winding-enamel-stripping" class="nav-link" data-scroll-target="#toroid-winding-enamel-stripping">1. Toroid Winding &amp; Enamel Stripping</a></li>
+  <li><a href="#micro-soldering-in-high-density-layouts" id="toc-micro-soldering-in-high-density-layouts" class="nav-link" data-scroll-target="#micro-soldering-in-high-density-layouts">2. Micro-Soldering in High-Density Layouts</a></li>
+  <li><a href="#rf-bench-safety-load-termination" id="toc-rf-bench-safety-load-termination" class="nav-link" data-scroll-target="#rf-bench-safety-load-termination">3. RF Bench Safety &amp; Load Termination</a></li>
+  </ul></li>
+  <li><a href="#field-radiator-20m-end-fed-half-wave-efhw-antenna" id="toc-field-radiator-20m-end-fed-half-wave-efhw-antenna" class="nav-link" data-scroll-target="#field-radiator-20m-end-fed-half-wave-efhw-antenna">Field Radiator: 20m End-Fed Half-Wave (EFHW) Antenna</a>
+  <ul class="collapse">
+  <li><a href="#impedance-transformation-transformer-physics" id="toc-impedance-transformation-transformer-physics" class="nav-link" data-scroll-target="#impedance-transformation-transformer-physics">Impedance Transformation &amp; Transformer Physics</a></li>
+  <li><a href="#tuning-vector-network-analysis" id="toc-tuning-vector-network-analysis" class="nav-link" data-scroll-target="#tuning-vector-network-analysis">Tuning &amp; Vector Network Analysis</a></li>
+  <li><a href="#what-i-couldnt-resolve-on-my-own" id="toc-what-i-couldnt-resolve-on-my-own" class="nav-link" data-scroll-target="#what-i-couldnt-resolve-on-my-own">What I Couldn’t Resolve on My Own</a></li>
+  </ul></li>
+  <li><a href="#community-contribution-technical-documentation" id="toc-community-contribution-technical-documentation" class="nav-link" data-scroll-target="#community-contribution-technical-documentation">Community Contribution: Technical Documentation</a></li>
+  <li><a href="#where-my-understanding-runs-out" id="toc-where-my-understanding-runs-out" class="nav-link" data-scroll-target="#where-my-understanding-runs-out">Where My Understanding Runs Out</a></li>
+  <li><a href="#relevance-to-graduate-studies" id="toc-relevance-to-graduate-studies" class="nav-link" data-scroll-target="#relevance-to-graduate-studies">Relevance to Graduate Studies</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Assembling a QRP CW Transceiver: From Toroids to On-Air Telemetry</h1>
+<p class="subtitle lead">Documenting a high-density RF kit build, precision assembly practices, and RF bench testing</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">Hardware</div>
+    <div class="quarto-category">RF &amp; Wireless</div>
+    <div class="quarto-category">Amateur Radio</div>
+    <div class="quarto-category">Soldering</div>
+    <div class="quarto-category">Embedded Systems</div>
+  </div>
+  </div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">March 2, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="project-overview-the-heavy-hitter" class="level2">
+<h2 class="anchored" data-anchor-id="project-overview-the-heavy-hitter">Project Overview: The Heavy Hitter</h2>
+<p>This project was part of my continued exploration of <a href="../projects/BoE.html">Digital Signal Processing</a> and <a href="../projects/cw-data-sci.html">Morse Code</a>. While these previous projects offered powerful insights into wireless theory and communications, I had the desire to step up to assembling a dedicated analog/digital hybrid radio from discrete components and confront the physical realities of radio frequency (RF) design.</p>
+<p>I took on the build of a <strong>QCX-mini 20m QRP CW Transceiver</strong> (designed by QRP Labs) - this kit is a remarkably compact, 5-watt single-band Morse code transceiver featuring a Class-E power amplifier, an onboard synthesized VFO (Si5351A), and digital DSP-based filtering.</p>
+<p>Recognizing that the dense layout and fine-pitch components can present a steep barrier for prospective builders, I documented the entire assembly journey as a multi-part, step-by-step video guide and postmortem for the amateur radio community.</p>
+<p>Additionally, due to strict cost constraints at the time, I set out to build my own End-fed Half-wave antenna from commonly available materials (speaker wire, toroids and various parts from Amazon, and upcycled materials from around the house). Throughout building and assembling this antenna, I taught myself how to read a Smith charts on an inexpensive VNA in order to tune the antenna for resonance on the <span class="math inline">\(20m\)</span> band.</p>
+<p>Testing with this kit and my home-built antenna revealed that I could easily receive world-wide transmissions (verified with Web SDR as far as Denmark) and nearly make contact with stations in Hawaii in early 2026. Completing this project gave me tremendous insight into precision assembly of complex electronic systems, basic antenna theory, and now offers a very capable vehicle for real-world testing of ML algorithms for decoding hand-fisted CW communications. I also found wonderful community with the great folks at the <a href="https://longislandcwclub.org/">Long Island CW Club</a>, who I am very pleased to make their acquaintence and continue learning about CW as time permits.</p>
+<hr>
+</section>
+<section id="video-guide-build-postmortem" class="level2">
+<h2 class="anchored" data-anchor-id="video-guide-build-postmortem">Video Guide &amp; Build Postmortem</h2>
+<p>Rather than producing a polished, fast-forwarded montage, the series captures the build process: inspecting miniature solder joints, winding toroid transformers, avoiding common assembly traps, and walking through bench testing prerequisites.</p>
+<div class="quarto-video ratio ratio-16x9"><iframe data-external="1" src="https://www.youtube.com/embed/wQ74Fb2kWv0" title="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe></div>
+<p><em>Complete Build Playlist:</em> <a href="https://youtube.com/watch?v=wQ74Fb2kWv0&amp;list=PLYMqW8m2xx7XMGyPr3m4tDiYvCoCZmM3b">Watch the Full QCX-mini Build Series on YouTube</a></p>
+<hr>
+</section>
+<section id="key-hardware-assembly-challenges" class="level2">
+<h2 class="anchored" data-anchor-id="key-hardware-assembly-challenges">Key Hardware &amp; Assembly Challenges</h2>
+<p>The QCX-mini packs a full superheterodyne/direct-conversion receiver, transmitter, LCD screen, and microcontroller into an aluminum enclosure roughly the size of a deck of cards. Assembling it demanded laboratory-level precision and strict assembly discipline (learned on-the-fly and with whatever I had on hand at the time).</p>
+<section id="toroid-winding-enamel-stripping" class="level3">
+<h3 class="anchored" data-anchor-id="toroid-winding-enamel-stripping">1. Toroid Winding &amp; Enamel Stripping</h3>
+<p>RF inductors and impedance transformers require hand-winding enameled magnet wire around tiny ferrite/iron-powder toroid cores (such as T37-6 cores).</p>
+<ul>
+<li><strong>Turns Accuracy:</strong> Inductance scales quadratically with turns (<span class="math inline">\(L \propto N^2\)</span>). A single missing or extra turn shifts the cutoff frequency of the multi-pole Chebyshev low-pass filter right into the passband. Ironically, the above thumbnail shows a major blunder - not spacing the windings evenly. For unknown reasons, this caused the output power to be far lower than 5W, which of course required desoldering and - in one case - rewinding with scrap wire.</li>
+<li><strong>Thermal Stripping:</strong> The polyurethane enamel coating must be burned away or tinned cleanly before soldering into the high-density PCB. Every lead required continuity verification using a multimeter to ensure enamel remnants didn’t insulate the solder joint. A Klein multimeter with beep continuity test was invaluable here, as it takes a lot more heat than one may think to melt off the coating.</li>
+</ul>
+</section>
+<section id="micro-soldering-in-high-density-layouts" class="level3">
+<h3 class="anchored" data-anchor-id="micro-soldering-in-high-density-layouts">2. Micro-Soldering in High-Density Layouts</h3>
+<p>Because through-hole pads sit mere fractions of a millimeter away from neighboring traces and pre-populated SMT components:</p>
+<ul>
+<li>I resolved to use a <strong>jeweler’s loupe / optical magnification</strong> and ample lighting from a headlamp to inspect solder wetting, fillet geometry, and clearance on every joint. Happily, I had no major issues here, though the BNC connector was very difficult to secure with solder because it acted as a giant heat sink, preventing the solder from laying nicely and securing the mounting pegs to the PCB board.</li>
+<li>Maintained strict thermal control: applying targeted paste flux with a fine conical tip, dwelling for under two seconds to prevent lifting pads or heat-soaking sensitive transistors.</li>
+<li>Utilized precision flush-cutters to clip component leads sub-millimeter to prevent shorts against the metal casing.</li>
+</ul>
+</section>
+<section id="rf-bench-safety-load-termination" class="level3">
+<h3 class="anchored" data-anchor-id="rf-bench-safety-load-termination">3. RF Bench Safety &amp; Load Termination</h3>
+<p>Unlike audio amplifiers, an RF transmitter cannot be tested open-circuit without instantly destroying the final output transistors (BS170 MOSFETs) due to reflected power and voltage standing waves (high VSWR). * Prepared a calibrated <strong>50-ohm dummy load</strong> capable of dissipating 5W continuous RF power. * Validated receiver alignment, sideband suppression, and sidetone pitch prior to any antenna connection.</p>
+<hr>
+<hr>
+</section>
+</section>
+<section id="field-radiator-20m-end-fed-half-wave-efhw-antenna" class="level2">
+<h2 class="anchored" data-anchor-id="field-radiator-20m-end-fed-half-wave-efhw-antenna">Field Radiator: 20m End-Fed Half-Wave (EFHW) Antenna</h2>
+<p>A portable QRP transceiver is only as effective as the antenna system attached to it. Rather than using an inefficient compromise whip, I designed and fabricated a resonant <strong>20-meter End-Fed Half-Wave (EFHW)</strong> wire antenna paired with a custom broadband impedance matching transformer.</p>
+<div id="fig-efhw" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-efhw-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="assets/efhw-homebrew.jpg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-efhw-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Assembled 49:1 matching transformer and 20m EFHW field antenna setup.
+</figcaption>
+</figure>
+</div>
+<section id="impedance-transformation-transformer-physics" class="level3">
+<h3 class="anchored" data-anchor-id="impedance-transformation-transformer-physics">Impedance Transformation &amp; Transformer Physics</h3>
+<p>An end-fed half-wave radiator driven at resonance presents an extremely high feedpoint impedance, which the ARRL handbook reports to be between <span class="math inline">\(2500\,\Omega\)</span> and <span class="math inline">\(3500\,\Omega\)</span>. This is due to the voltage antinode (and current node) at the wire’s termination:</p>
+<p><span class="math display">\[\lambda = \frac{c}{f} = \frac{3 \times 10^8\text{ m/s}}{14.060\text{ MHz}} \approx 21.34\text{ m} \implies \frac{\lambda}{2} \approx 10.67\text{ m}\ (35\text{ ft})\]</span></p>
+<p>To match this high-impedance feed to the standard <span class="math inline">\(50\,\Omega\)</span> unbalanced output of the QCX-mini’s BNC connector without a bulky antenna tuner, I hand-wound a <strong>49:1 Unun (Unbalanced-to-Unbalanced) transformer</strong>:</p>
+<ul>
+<li><strong>Toroid Selection:</strong> Built on a high-permeability Fair-Rite <strong>FT140-43</strong> ferrite toroid core to maintain low insertion loss across the 14 MHz band while avoiding core saturation.</li>
+<li><strong>Winding Geometry:</strong> Wound using an autotransformer configuration with an isolated primary coupling loop: 2 primary turns tapped into a 14-turn secondary (<span class="math inline">\(N_p = 2\)</span>, <span class="math inline">\(N_s = 14\)</span>).</li>
+<li><strong>Impedance Ratio:</strong> Because transformation scales with the square of the turns ratio: <span class="math display">\[\frac{Z_{\text{load}}}{Z_{\text{source}}} = \left(\frac{N_s}{N_p}\right)^2 = \left(\frac{14}{2}\right)^2 = 7^2 = 49 \implies 50\,\Omega \times 49 = 2450\,\Omega\]</span></li>
+<li><strong>High-Voltage Compensation Capacitor:</strong> Placed a <span class="math inline">\(100\text{ pF}\)</span> / <span class="math inline">\(1\text{ kV}\)</span> silver-mica capacitor in parallel across the <span class="math inline">\(50\,\Omega\)</span> input to tune out leakage inductance introduced by the bifilar primary coupling at 14 MHz.</li>
+</ul>
+</section>
+<section id="tuning-vector-network-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="tuning-vector-network-analysis">Tuning &amp; Vector Network Analysis</h3>
+<p>Tuning an EFHW requires meticulous length trimming to position the minimum Voltage Standing Wave Ratio (VSWR) directly inside the CW sub-band (14.000–14.070 MHz):</p>
+<ol type="1">
+<li><strong>Pruning the Radiator:</strong> Began with roughly 36 feet of 22 AWG insulated stranded copper wire suspended in a sloper configuration.</li>
+<li><strong>VNA Sweeps:</strong> Used a calibrated NanoVNA to sweep the reflection coefficient (<span class="math inline">\(S_{11}\)</span>) and return loss from 13.5 MHz to 14.5 MHz.</li>
+<li><strong>Resonance Trimming:</strong> Folded back the wire in 1-inch increments until the resonant dip achieved an <span class="math inline">\(S_{11} &lt; -25\text{ dB}\)</span> (VSWR <span class="math inline">\(&lt; 1.15:1\)</span>) centered at <strong>14.060 MHz</strong> (the international QRP CW calling frequency).</li>
+</ol>
+<p>This self-contained, resonant antenna requires no tuner and minimal counterpoise, providing a high-efficiency field radiator capable of working stations across North America on just 5 watts of RF power.</p>
+</section>
+<section id="what-i-couldnt-resolve-on-my-own" class="level3">
+<h3 class="anchored" data-anchor-id="what-i-couldnt-resolve-on-my-own">What I Couldn’t Resolve on My Own</h3>
+<p>Two questions came up during this build that I could work around in practice but never fully resolve in theory:</p>
+<ul>
+<li><strong>Core and wire sizing.</strong> I settled on the FT140-43 core and 22 AWG wire based on what other builders’ writeups used, not from a calculation I could reproduce myself. I don’t yet know how to size a toroid core or wire gauge for a given power level from first principles—accounting for core saturation and heating at 5W of continuous RF, and how RF-specific effects like skin effect factor into an appropriate wire gauge—versus simply copying a known-good recipe.</li>
+<li><strong>The counterpoise question.</strong> I found genuinely conflicting guidance in the amateur radio community about whether an EFHW like this needs a counterpoise (and if so, how long) or whether the feedline shield alone is sufficient. I still don’t have a confident, first-principles answer to that question.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="community-contribution-technical-documentation" class="level2">
+<h2 class="anchored" data-anchor-id="community-contribution-technical-documentation">Community Contribution: Technical Documentation</h2>
+<p>One of the main motivations for this project was giving back to the community. When I began, available build logs were often fragmented or skipped over tricky mechanical nuances—such as header clearance between daughterboards, rotary encoder alignment, and the installation sequence for the display sub-assembly.</p>
+<p>By systematically logging each stage I’ve provided:</p>
+<ul>
+<li><strong>Tool Recommendations:</strong> Clarified essential workbench tools (flush cutters, flux types, optical magnification, and multimeter continuity strategies) specifically tailored for amateur builders tackling high-density kits.</li>
+<li><strong>Failure Prevention:</strong> Highlighted mechanical gotchas—like installing sub-boards out of sequence—that are difficult to undo once multi-pin headers are soldered.</li>
+<li><strong>Accessible Technical Explanations:</strong> Broke down how analog and digital sub-circuits interface inside modern micro-transceivers.</li>
+</ul>
+<hr>
+</section>
+<section id="where-my-understanding-runs-out" class="level2">
+<h2 class="anchored" data-anchor-id="where-my-understanding-runs-out">Where My Understanding Runs Out</h2>
+<p>The QCX-mini’s own manual is thorough—schematic, theory of operation, and alignment procedure are all in there. But at my current level, I can follow the assembly instructions and get a working radio without being able to fully read the schematic diagrams the way a licensed RF engineer would. I can tell you <em>that</em> the receiver front-end, the DSP audio filter, and the transformer network work together—I can’t yet tell you <em>why</em> each design choice was made, from first principles, the way the manual’s author clearly can. That’s the specific kind of knowledge I don’t think I can keep self-teaching from a kit and a soldering iron alone—it’s the kind of thing that comes from formal instruction by someone qualified to teach it.</p>
+<hr>
+</section>
+<section id="relevance-to-graduate-studies" class="level2">
+<h2 class="anchored" data-anchor-id="relevance-to-graduate-studies">Relevance to Graduate Studies</h2>
+<p>Building and documenting this transceiver reinforced practical engineering competencies that directly connect to graduate-level research in <strong>Electrical and Computer Engineering</strong>:</p>
+<ul>
+<li><strong>RF Systems &amp; Electromagnetics:</strong> Built practical, hands-on familiarity with impedance matching, filter topology (Chebyshev low-pass networks), and harmonic suppression required for FCC compliance—largely through empirical trial-and-error rather than closed-form design, which is exactly the gap I’d want graduate coursework to close.</li>
+<li><strong>Hardware Troubleshooting &amp; Diagnostics:</strong> Practiced a rigorous, bottom-up diagnostic approach—isolating issues across power supplies, local oscillators, mixer stages, and final amplification—even where I couldn’t always explain a failure from first principles.</li>
+<li><strong>Technical Communication:</strong> The ability to document and explain complex electromechanical systems to diverse audiences is foundational to academic authorship, lab leadership, and peer collaboration.</li>
+<li><strong>Amateur Radio Credentialing:</strong> Studying for and passing my <strong>Amateur Extra Class FCC License (AI5YD)</strong> gave me a working knowledge of electronics theory, though the license exam tests recall more than design capability—another reason I’m looking for more rigorous, formal instruction.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,15 @@
+[
+  {
+    "listing": "/posts/index.html",
+    "items": []
+  },
+  {
+    "listing": "/projects/index.html",
+    "items": [
+      "/projects/cl-sudoku.html",
+      "/projects/qcx-mini.html",
+      "/projects/cw-data-sci.html",
+      "/projects/BoE.html"
+    ]
+  }
+]
