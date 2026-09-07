@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>Matthew Younger</title>
+<link>https://allhailthetail.github.io/quarto-blog/projects/</link>
+<atom:link href="https://allhailthetail.github.io/quarto-blog/projects/index.xml" rel="self" type="application/rss+xml"/>
+<description></description>
+<image>
+<url>https://allhailthetail.github.io/quarto-blog/assets/profile.jpg</url>
+<title>Matthew Younger</title>
+<link>https://allhailthetail.github.io/quarto-blog/projects/</link>
+</image>
+<generator>quarto-1.10.18</generator>
+<lastBuildDate>Fri, 20 Mar 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Constraint Propagation &amp; Backtracking in Common Lisp</title>
+  <link>https://allhailthetail.github.io/quarto-blog/projects/cl-sudoku.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="project-context-motivation" class="level2">
+<h2 class="anchored" data-anchor-id="project-context-motivation">Project Context &amp; Motivation</h2>
+<p><a href="https://github.com/allhailthetail/cl-sudoku">GitHub::cl-sudoku</a></p>
+<p>Sudoku is a classic constraint-satisfaction problem (CSP); it’s also <strong>NP-Complete</strong>, meaning essentially that there are no known direct algorithmic solutions to this puzzle. Rather, for both humans <strong>and</strong> software, we must rely on heuristics and guess-and-check approaches to solve them. Writing an idiomatic, elegant solver in <strong>Common Lisp</strong> offered an exceptional vehicle for exploring Comp Sci principles of algorithmic recursion, symbolic data representation, and various functional programming paradigms.</p>
+<p>I built <code>cl-sudoku</code> to move beyond mainstream imperative languages (like Python and C++) and explore how Lisp’s homoiconicity, dynamic typing, and recursive list manipulation simplify search-space exploration.</p>
+<p>The goal was to construct a clean, self-contained solver that models Sudoku boards as symbolic data structures, reduces candidates via constraint propagation, and uses depth-first backtracking search to resolve branch ambiguities.</p>
+<hr>
+</section>
+<section id="representing-the-problem-space" class="level2">
+<h2 class="anchored" data-anchor-id="representing-the-problem-space">Representing the Problem Space</h2>
+<p>In an imperative language, a Sudoku grid is typically modeled as a mutable two-dimensional array (<code>int[9][9]</code>). In Lisp, while multi-dimensional arrays exist, representing the board as structured lists or vectors of peer constraints allows us to reason about transformations functionally.</p>
+<pre><code>+-------+-------+-------+
+| . . 3 | . 2 . | 6 . . |       Board Representation:
+| 9 . . | 3 . 5 | . . 1 |  ---&gt; Flat list / 1D vector (81 cells)
+| . . 1 | 8 . 6 | 4 . . |       - Digits: 1 to 9
++-------+-------+-------+       - Unassigned: NIL or 0
+| . . 8 | 1 . 2 | 9 . . |
+| 7 . . | . . . | . . 8 |
+| . . 6 | 7 . 8 | 2 . . |
++-------+-------+-------+
+| . . 2 | 6 . 9 | 5 . . |
+| 8 . . | 2 . 3 | . . 9 |
+| . . 5 | . 1 . | 3 . . |
++-------+-------+-------+</code></pre>
+<p>Every cell index <img src="https://latex.codecogs.com/png.latex?i%20%5Cin%20%5B0,%2080%5D"> participates in three distinct constraint sets: 1. <strong>Row peers:</strong> <img src="https://latex.codecogs.com/png.latex?%5Clfloor%20i%20/%209%20%5Crfloor%20%5Ctimes%209%20+%20c"> for <img src="https://latex.codecogs.com/png.latex?c%20%5Cin%20%5B0,%208%5D"> 2. <strong>Column peers:</strong> <img src="https://latex.codecogs.com/png.latex?(r%20%5Ctimes%209)%20+%20(i%20%5Cpmod%209)"> for <img src="https://latex.codecogs.com/png.latex?r%20%5Cin%20%5B0,%208%5D"> 3. <strong>Box peers:</strong> The <img src="https://latex.codecogs.com/png.latex?3%20%5Ctimes%203"> subgrid containing index <img src="https://latex.codecogs.com/png.latex?i"></p>
+<p>By precomputing the set of 20 unique “peers” for each of the 81 cell coordinates at load time, constraint checks reduce to set-difference operations over symbols rather than nested loop traversals.</p>
+<hr>
+</section>
+<section id="algorithmic-architecture" class="level2">
+<h2 class="anchored" data-anchor-id="algorithmic-architecture">Algorithmic Architecture</h2>
+<p>The solver uses a two-pronged strategy: deterministic deduction followed by recursive backtracking.</p>
+<section id="constraint-propagation-naked-singles" class="level3">
+<h3 class="anchored" data-anchor-id="constraint-propagation-naked-singles">Constraint Propagation (Naked Singles)</h3>
+<p>Before venturing into search trees, the solver propagates known values across peer units. If a cell has only one valid candidate remaining given its row, column, and box constraints, that value is assigned immediately. This pruning cascades, often solving easy and moderate puzzles without taking a single speculative branch.</p>
+</section>
+<section id="heuristic-variable-selection-minimum-remaining-values" class="level3">
+<h3 class="anchored" data-anchor-id="heuristic-variable-selection-minimum-remaining-values">Heuristic Variable Selection (Minimum Remaining Values)</h3>
+<p>When deterministic deduction reaches quiescence and speculative branching is necessary, choosing the right cell to guess determines search performance:</p>
+<ul>
+<li>A naive search picks the first open cell index, leading to deep, thrashing subtrees.</li>
+<li>Instead, the solver employs the <strong>Minimum Remaining Values (MRV)</strong> heuristic (or <em>most constrained variable</em>): it chooses the unassigned cell with the fewest legal candidate choices. If a cell has only two possible options, branching on it cuts the branching factor to 2, failing fast if a branch is invalid.</li>
+</ul>
+</section>
+<section id="recursive-backtracking-search" class="level3">
+<h3 class="anchored" data-anchor-id="recursive-backtracking-search">Recursive Backtracking Search</h3>
+<p>The backtracking engine is built on pure functional recursion. Rather than mutating global grid state and manually rolling back changes upon encountering an invalid configuration, the function accepts the current board state and returns either a solved board or <code>NIL</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode lisp code-with-copy"><code class="sourceCode commonlisp"><span id="cb2-1">(<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">defun</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;"> solve </span>(board)</span>
+<span id="cb2-2">  <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Recursively solve the Sudoku BOARD using constraint-driven backtracking."</span></span>
+<span id="cb2-3">  (<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">let</span> ((clean-board (propagate-constraints board)))</span>
+<span id="cb2-4">    (<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">cond</span></span>
+<span id="cb2-5">      ((<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">null</span> clean-board) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">nil</span>)                <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">;; Conflict encountered; backtrack</span></span>
+<span id="cb2-6">      ((solved-p clean-board) clean-board)    <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">;; Complete and valid configuration</span></span>
+<span id="cb2-7">      (<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">t</span></span>
+<span id="cb2-8">       <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">;; Pick cell with fewest candidates (MRV heuristic)</span></span>
+<span id="cb2-9">       (<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">let*</span> ((cell (find-most-constrained-cell clean-board))</span>
+<span id="cb2-10">              (candidates (get-legal-candidates clean-board cell)))</span>
+<span id="cb2-11">         (<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">some</span> (<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">lambda</span> (val)</span>
+<span id="cb2-12">                 (solve (assign clean-board cell val)))</span>
+<span id="cb2-13">               candidates))))))</span></code></pre></div></div>
+<p>The combination of some with higher-order functions provides a declarative backtracking loop: it attempts candidates sequentially and halts on the first non-NIL solution returned down the call stack.</p>
+</section>
+</section>
+<section id="lessons-in-common-lisp-functional-paradigms" class="level2">
+<h2 class="anchored" data-anchor-id="lessons-in-common-lisp-functional-paradigms">Lessons in Common Lisp &amp; Functional Paradigms</h2>
+<p>Building this project provided several takeaways that carry directly into systems programming and language semantics:</p>
+<ul>
+<li>Elegance of Higher-Order Functions: Replacing index-tracking loops with functions like mapcar, remove-if-not, every, and some produces declarative code where the intent mirrors mathematical definitions.</li>
+<li>Symbolic vs.&nbsp;Numeric Representation: Manipulating sets of possible values using Lisp symbols and lists provides great flexibility during debugging in the REPL (SLY/SLIME), allowing inspection of intermediate board states without custom serializers.</li>
+<li>Stack &amp; Recursion Optimization: Profiling recursive search spaces reinforces the importance of tail recursion and managing allocation overhead during state copying.</li>
+<li>Relevance to Graduate Studies &amp; Computer Science/Artificial Intelligence: Demonstrates practical implementation of fundamental AI concepts: Constraint Satisfaction Problems (CSP), search-space pruning, and variable-ordering heuristics.</li>
+<li>Declarative &amp; Symbolic Computation: Builds depth in non-imperative computational models, essential for compilers, formal methods, and automated reasoning.</li>
+<li>Algorithmic Complexity: Illustrates how heuristic selection transforms worst-case exponential time complexity (<img src="https://latex.codecogs.com/png.latex?9%5E%7B81%7D">) into sub-millisecond execution for practical instances.</li>
+</ul>
+<hr>
+</section>
+<section id="reflections-is-common-lisp-still-the-language-of-ai" class="level2">
+<h2 class="anchored" data-anchor-id="reflections-is-common-lisp-still-the-language-of-ai">Reflections: Is Common Lisp Still the “Language of AI”?</h2>
+<p>Throughout my coursework, instructors occasionally introduced materials proclaiming Lisp as the quintessential “secret weapon” or the definitive “Language of AI.” After spending time writing algorithms in Common Lisp and exploring modern machine learning pipelines, my perspective has evolved past that overstatement. Rather, I feel that LISP remains one of the greatest languages for symbolic and generative computation and has some great use cases where recursion and true Macros are needed in order to solve a problem. I found that several industries either use or have used LISP to great effect in the right use cases. Additionally, Common Lisp has a very friendly community and passionate following. Given that it has its own ANSI standard, it’s also a very stable and dependable language on which to gain an understanding of complex programming topics, making for less work that takes place unraveling modern languages which are in a constant state of flux due to ongoing development.</p>
+<section id="lisp-is-great-for-exploring-classical-ai." class="level3">
+<h3 class="anchored" data-anchor-id="lisp-is-great-for-exploring-classical-ai.">1. LISP is great for exploring “classical AI”.</h3>
+<p>When Lisp earned its reputation as the foundation of AI at MIT, Stanford, and Xerox PARC in the 1970s and 1980s, “Artificial Intelligence” meant <strong>Symbolic AI (Good Old-Fashioned AI / GOFAI)</strong>: * Formal logic deduction and rule engines * Expert systems and semantic networks * Graph search and constraint satisfaction (exactly like Sudoku)</p>
+<p>For these domains, Lisp has no equal. Its homoiconicity (code-as-data), powerful macro system, dynamic typing, and interactive image-based REPL allowed early researchers to invent domain-specific languages (DSLs) and manipulate ASTs effortlessly. If AI is defined as manipulating logic symbols and reasoning trees, Lisp earned the title honestly.</p>
+<p>Modern AI, however, underwent a seismic shift toward <strong>Connectionist AI</strong>: * Deep neural networks, continuous tensor representations, and automatic differentiation * Highly parallel matrix math executing across thousands of SIMD/SIMT GPU cores * Massive statistical optimization (SGD, Adam) rather than discrete graph traversal</p>
+<p>Python didn’t conquer modern machine learning because it is conceptually superior to Lisp; it won because it became the premier high-level glue language wrapping highly optimized C++, CUDA, and BLAS/LAPACK runtimes (PyTorch, TensorFlow, JAX). Lisp’s elegant linked lists and pointer chasing are fundamentally misaligned with contiguous memory layouts, vectorized cache lines, and hardware tensor cores.</p>
+</section>
+<section id="lisp-is-the-progenitor-of-most-modern-languages" class="level3">
+<h3 class="anchored" data-anchor-id="lisp-is-the-progenitor-of-most-modern-languages">2. Lisp is the Progenitor of most modern languages</h3>
+<p>While Common Lisp may no longer dominate industrial AI headlines, almost every breakthrough feature modern languages celebrate was born in the Lisp ecosystem: * <strong>Garbage Collection:</strong> Invented by John McCarthy specifically to manage dynamic tree allocations in Lisp. * <strong>Dynamic Typing &amp; First-Class Functions:</strong> Pioneered decades before JavaScript or Python made them mainstream. * <strong>Interactive Development:</strong> The interactive feedback loop popularized by Jupyter Notebooks is essentially a rudimentary, browser-bound approximation of a true Lisp REPL (like SLIME or SLY). * <strong>Metaprogramming:</strong> Few modern languages match the safety and expressive power of Common Lisp’s macro system (<code>defmacro</code>), which operates on raw S-expressions rather than fragile token streams or complex compiler plugins.</p>
+</section>
+<section id="the-verdict" class="level3">
+<h3 class="anchored" data-anchor-id="the-verdict">The Verdict</h3>
+<p>Is Common Lisp the “Language of AI” today? <strong>Practically speaking, no.</strong> If you are training multi-billion parameter transformer models, fine-tuning diffusion networks, or writing high-throughput tensor operations, Python and C++/CUDA remain the undisputed industry standard.</p>
+<p>However, as an educational tool and an intellectual foundation, <strong>learning Lisp changes how you think about computation forever.</strong> I believe this was the core message of most materials we were exposed to during the course, zeal and mysticism aside (though it makes for very entertaining YouTube content). Writing <code>cl-sudoku</code> in Common Lisp demonstrated that complex problem domains can be expressed declaratively, recursively, and with startling conciseness. Understanding Lisp demystifies interpreters, abstract syntax trees, and symbolic reasoning—giving an engineer a profound appreciation for what modern frameworks abstract away.</p>
+
+
+</section>
+</section>
+
+ ]]></description>
+  <category>Algorithms</category>
+  <category>Common Lisp</category>
+  <category>Functional Programming</category>
+  <category>Computer Science</category>
+  <guid>https://allhailthetail.github.io/quarto-blog/projects/cl-sudoku.html</guid>
+  <pubDate>Fri, 20 Mar 2026 00:00:00 GMT</pubDate>
+  <media:content url="https://allhailthetail.github.io/quarto-blog/projects/assets/sudoku.png" medium="image" type="image/png" height="81" width="144"/>
+</item>
+<item>
+  <title>Assembling a QRP CW Transceiver: From Toroids to On-Air Telemetry</title>
+  <link>https://allhailthetail.github.io/quarto-blog/projects/qcx-mini.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="project-overview-the-heavy-hitter" class="level2">
+<h2 class="anchored" data-anchor-id="project-overview-the-heavy-hitter">Project Overview: The Heavy Hitter</h2>
+<p>This project was part of my continued exploration of <a href="../projects/BoE.html">Digital Signal Processing</a> and <a href="../projects/cw-data-sci.html">Morse Code</a>. While these previous projects offered powerful insights into wireless theory and communications, I had the desire to step up to assembling a dedicated analog/digital hybrid radio from discrete components and confront the physical realities of radio frequency (RF) design.</p>
+<p>I took on the build of a <strong>QCX-mini 20m QRP CW Transceiver</strong> (designed by QRP Labs) - this kit is a remarkably compact, 5-watt single-band Morse code transceiver featuring a Class-E power amplifier, an onboard synthesized VFO (Si5351A), and digital DSP-based filtering.</p>
+<p>Recognizing that the dense layout and fine-pitch components can present a steep barrier for prospective builders, I documented the entire assembly journey as a multi-part, step-by-step video guide and postmortem for the amateur radio community.</p>
+<p>Additionally, due to strict cost constraints at the time, I set out to build my own End-fed Half-wave antenna from commonly available materials (speaker wire, toroids and various parts from Amazon, and upcycled materials from around the house). Throughout building and assembling this antenna, I taught myself how to read a Smith charts on an inexpensive VNA in order to tune the antenna for resonance on the <img src="https://latex.codecogs.com/png.latex?20m"> band.</p>
+<p>Testing with this kit and my home-built antenna revealed that I could easily receive world-wide transmissions (verified with Web SDR as far as Denmark) and nearly make contact with stations in Hawaii in early 2026. Completing this project gave me tremendous insight into precision assembly of complex electronic systems, basic antenna theory, and now offers a very capable vehicle for real-world testing of ML algorithms for decoding hand-fisted CW communications. I also found wonderful community with the great folks at the <a href="https://longislandcwclub.org/">Long Island CW Club</a>, who I am very pleased to make their acquaintence and continue learning about CW as time permits.</p>
+<hr>
+</section>
+<section id="video-guide-build-postmortem" class="level2">
+<h2 class="anchored" data-anchor-id="video-guide-build-postmortem">Video Guide &amp; Build Postmortem</h2>
+<p>Rather than producing a polished, fast-forwarded montage, the series captures the build process: inspecting miniature solder joints, winding toroid transformers, avoiding common assembly traps, and walking through bench testing prerequisites.</p>
+<div class="quarto-video ratio ratio-16x9"><iframe data-external="1" src="https://www.youtube.com/embed/wQ74Fb2kWv0" title="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe></div>
+<p><em>Complete Build Playlist:</em> <a href="https://youtube.com/watch?v=wQ74Fb2kWv0&amp;list=PLYMqW8m2xx7XMGyPr3m4tDiYvCoCZmM3b">Watch the Full QCX-mini Build Series on YouTube</a></p>
+<hr>
+</section>
+<section id="key-hardware-assembly-challenges" class="level2">
+<h2 class="anchored" data-anchor-id="key-hardware-assembly-challenges">Key Hardware &amp; Assembly Challenges</h2>
+<p>The QCX-mini packs a full superheterodyne/direct-conversion receiver, transmitter, LCD screen, and microcontroller into an aluminum enclosure roughly the size of a deck of cards. Assembling it demanded laboratory-level precision and strict assembly discipline (learned on-the-fly and with whatever I had on hand at the time).</p>
+<section id="toroid-winding-enamel-stripping" class="level3">
+<h3 class="anchored" data-anchor-id="toroid-winding-enamel-stripping">1. Toroid Winding &amp; Enamel Stripping</h3>
+<p>RF inductors and impedance transformers require hand-winding enameled magnet wire around tiny ferrite/iron-powder toroid cores (such as T37-6 cores).</p>
+<ul>
+<li><strong>Turns Accuracy:</strong> Inductance scales quadratically with turns (<img src="https://latex.codecogs.com/png.latex?L%20%5Cpropto%20N%5E2">). A single missing or extra turn shifts the cutoff frequency of the multi-pole Chebyshev low-pass filter right into the passband. Ironically, the above thumbnail shows a major blunder - not spacing the windings evenly. For unknown reasons, this caused the output power to be far lower than 5W, which of course required desoldering and - in one case - rewinding with scrap wire.</li>
+<li><strong>Thermal Stripping:</strong> The polyurethane enamel coating must be burned away or tinned cleanly before soldering into the high-density PCB. Every lead required continuity verification using a multimeter to ensure enamel remnants didn’t insulate the solder joint. A Klein multimeter with beep continuity test was invaluable here, as it takes a lot more heat than one may think to melt off the coating.</li>
+</ul>
+</section>
+<section id="micro-soldering-in-high-density-layouts" class="level3">
+<h3 class="anchored" data-anchor-id="micro-soldering-in-high-density-layouts">2. Micro-Soldering in High-Density Layouts</h3>
+<p>Because through-hole pads sit mere fractions of a millimeter away from neighboring traces and pre-populated SMT components:</p>
+<ul>
+<li>I resolved to use a <strong>jeweler’s loupe / optical magnification</strong> and ample lighting from a headlamp to inspect solder wetting, fillet geometry, and clearance on every joint. Happily, I had no major issues here, though the BNC connector was very difficult to secure with solder because it acted as a giant heat sink, preventing the solder from laying nicely and securing the mounting pegs to the PCB board.</li>
+<li>Maintained strict thermal control: applying targeted paste flux with a fine conical tip, dwelling for under two seconds to prevent lifting pads or heat-soaking sensitive transistors.</li>
+<li>Utilized precision flush-cutters to clip component leads sub-millimeter to prevent shorts against the metal casing.</li>
+</ul>
+</section>
+<section id="rf-bench-safety-load-termination" class="level3">
+<h3 class="anchored" data-anchor-id="rf-bench-safety-load-termination">3. RF Bench Safety &amp; Load Termination</h3>
+<p>Unlike audio amplifiers, an RF transmitter cannot be tested open-circuit without instantly destroying the final output transistors (BS170 MOSFETs) due to reflected power and voltage standing waves (high VSWR). * Prepared a calibrated <strong>50-ohm dummy load</strong> capable of dissipating 5W continuous RF power. * Validated receiver alignment, sideband suppression, and sidetone pitch prior to any antenna connection.</p>
+<hr>
+<hr>
+</section>
+</section>
+<section id="field-radiator-20m-end-fed-half-wave-efhw-antenna" class="level2">
+<h2 class="anchored" data-anchor-id="field-radiator-20m-end-fed-half-wave-efhw-antenna">Field Radiator: 20m End-Fed Half-Wave (EFHW) Antenna</h2>
+<p>A portable QRP transceiver is only as effective as the antenna system attached to it. Rather than using an inefficient compromise whip, I designed and fabricated a resonant <strong>20-meter End-Fed Half-Wave (EFHW)</strong> wire antenna paired with a custom broadband impedance matching transformer.</p>
+<div id="fig-efhw" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-efhw-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="https://allhailthetail.github.io/quarto-blog/projects/assets/efhw-homebrew.jpg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-efhw-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Assembled 49:1 matching transformer and 20m EFHW field antenna setup.
+</figcaption>
+</figure>
+</div>
+<section id="impedance-transformation-transformer-physics" class="level3">
+<h3 class="anchored" data-anchor-id="impedance-transformation-transformer-physics">Impedance Transformation &amp; Transformer Physics</h3>
+<p>An end-fed half-wave radiator driven at resonance presents an extremely high feedpoint impedance, which the ARRL handbook reports to be between <img src="https://latex.codecogs.com/png.latex?2500%5C,%5COmega"> and <img src="https://latex.codecogs.com/png.latex?3500%5C,%5COmega">. This is due to the voltage antinode (and current node) at the wire’s termination:</p>
+<p><img src="https://latex.codecogs.com/png.latex?%5Clambda%20=%20%5Cfrac%7Bc%7D%7Bf%7D%20=%20%5Cfrac%7B3%20%5Ctimes%2010%5E8%5Ctext%7B%20m/s%7D%7D%7B14.060%5Ctext%7B%20MHz%7D%7D%20%5Capprox%2021.34%5Ctext%7B%20m%7D%20%5Cimplies%20%5Cfrac%7B%5Clambda%7D%7B2%7D%20%5Capprox%2010.67%5Ctext%7B%20m%7D%5C%20(35%5Ctext%7B%20ft%7D)"></p>
+<p>To match this high-impedance feed to the standard <img src="https://latex.codecogs.com/png.latex?50%5C,%5COmega"> unbalanced output of the QCX-mini’s BNC connector without a bulky antenna tuner, I hand-wound a <strong>49:1 Unun (Unbalanced-to-Unbalanced) transformer</strong>:</p>
+<ul>
+<li><strong>Toroid Selection:</strong> Built on a high-permeability Fair-Rite <strong>FT140-43</strong> ferrite toroid core to maintain low insertion loss across the 14 MHz band while avoiding core saturation.</li>
+<li><strong>Winding Geometry:</strong> Wound using an autotransformer configuration with an isolated primary coupling loop: 2 primary turns tapped into a 14-turn secondary (<img src="https://latex.codecogs.com/png.latex?N_p%20=%202">, <img src="https://latex.codecogs.com/png.latex?N_s%20=%2014">).</li>
+<li><strong>Impedance Ratio:</strong> Because transformation scales with the square of the turns ratio: <img src="https://latex.codecogs.com/png.latex?%5Cfrac%7BZ_%7B%5Ctext%7Bload%7D%7D%7D%7BZ_%7B%5Ctext%7Bsource%7D%7D%7D%20=%20%5Cleft(%5Cfrac%7BN_s%7D%7BN_p%7D%5Cright)%5E2%20=%20%5Cleft(%5Cfrac%7B14%7D%7B2%7D%5Cright)%5E2%20=%207%5E2%20=%2049%20%5Cimplies%2050%5C,%5COmega%20%5Ctimes%2049%20=%202450%5C,%5COmega"></li>
+<li><strong>High-Voltage Compensation Capacitor:</strong> Placed a <img src="https://latex.codecogs.com/png.latex?100%5Ctext%7B%20pF%7D"> / <img src="https://latex.codecogs.com/png.latex?1%5Ctext%7B%20kV%7D"> silver-mica capacitor in parallel across the <img src="https://latex.codecogs.com/png.latex?50%5C,%5COmega"> input to tune out leakage inductance introduced by the bifilar primary coupling at 14 MHz.</li>
+</ul>
+</section>
+<section id="tuning-vector-network-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="tuning-vector-network-analysis">Tuning &amp; Vector Network Analysis</h3>
+<p>Tuning an EFHW requires meticulous length trimming to position the minimum Voltage Standing Wave Ratio (VSWR) directly inside the CW sub-band (14.000–14.070 MHz):</p>
+<ol type="1">
+<li><strong>Pruning the Radiator:</strong> Began with roughly 36 feet of 22 AWG insulated stranded copper wire suspended in a sloper configuration.</li>
+<li><strong>VNA Sweeps:</strong> Used a calibrated NanoVNA to sweep the reflection coefficient (<img src="https://latex.codecogs.com/png.latex?S_%7B11%7D">) and return loss from 13.5 MHz to 14.5 MHz.</li>
+<li><strong>Resonance Trimming:</strong> Folded back the wire in 1-inch increments until the resonant dip achieved an <img src="https://latex.codecogs.com/png.latex?S_%7B11%7D%20%3C%20-25%5Ctext%7B%20dB%7D"> (VSWR <img src="https://latex.codecogs.com/png.latex?%3C%201.15:1">) centered at <strong>14.060 MHz</strong> (the international QRP CW calling frequency).</li>
+</ol>
+<p>This self-contained, resonant antenna requires no tuner and minimal counterpoise, providing a high-efficiency field radiator capable of working stations across North America on just 5 watts of RF power.</p>
+</section>
+<section id="what-i-couldnt-resolve-on-my-own" class="level3">
+<h3 class="anchored" data-anchor-id="what-i-couldnt-resolve-on-my-own">What I Couldn’t Resolve on My Own</h3>
+<p>Two questions came up during this build that I could work around in practice but never fully resolve in theory:</p>
+<ul>
+<li><strong>Core and wire sizing.</strong> I settled on the FT140-43 core and 22 AWG wire based on what other builders’ writeups used, not from a calculation I could reproduce myself. I don’t yet know how to size a toroid core or wire gauge for a given power level from first principles—accounting for core saturation and heating at 5W of continuous RF, and how RF-specific effects like skin effect factor into an appropriate wire gauge—versus simply copying a known-good recipe.</li>
+<li><strong>The counterpoise question.</strong> I found genuinely conflicting guidance in the amateur radio community about whether an EFHW like this needs a counterpoise (and if so, how long) or whether the feedline shield alone is sufficient. I still don’t have a confident, first-principles answer to that question.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="community-contribution-technical-documentation" class="level2">
+<h2 class="anchored" data-anchor-id="community-contribution-technical-documentation">Community Contribution: Technical Documentation</h2>
+<p>One of the main motivations for this project was giving back to the community. When I began, available build logs were often fragmented or skipped over tricky mechanical nuances—such as header clearance between daughterboards, rotary encoder alignment, and the installation sequence for the display sub-assembly.</p>
+<p>By systematically logging each stage I’ve provided:</p>
+<ul>
+<li><strong>Tool Recommendations:</strong> Clarified essential workbench tools (flush cutters, flux types, optical magnification, and multimeter continuity strategies) specifically tailored for amateur builders tackling high-density kits.</li>
+<li><strong>Failure Prevention:</strong> Highlighted mechanical gotchas—like installing sub-boards out of sequence—that are difficult to undo once multi-pin headers are soldered.</li>
+<li><strong>Accessible Technical Explanations:</strong> Broke down how analog and digital sub-circuits interface inside modern micro-transceivers.</li>
+</ul>
+<hr>
+</section>
+<section id="where-my-understanding-runs-out" class="level2">
+<h2 class="anchored" data-anchor-id="where-my-understanding-runs-out">Where My Understanding Runs Out</h2>
+<p>The QCX-mini’s own manual is thorough—schematic, theory of operation, and alignment procedure are all in there. But at my current level, I can follow the assembly instructions and get a working radio without being able to fully read the schematic diagrams the way a licensed RF engineer would. I can tell you <em>that</em> the receiver front-end, the DSP audio filter, and the transformer network work together—I can’t yet tell you <em>why</em> each design choice was made, from first principles, the way the manual’s author clearly can. That’s the specific kind of knowledge I don’t think I can keep self-teaching from a kit and a soldering iron alone—it’s the kind of thing that comes from formal instruction by someone qualified to teach it.</p>
+<hr>
+</section>
+<section id="relevance-to-graduate-studies" class="level2">
+<h2 class="anchored" data-anchor-id="relevance-to-graduate-studies">Relevance to Graduate Studies</h2>
+<p>Building and documenting this transceiver reinforced practical engineering competencies that directly connect to graduate-level research in <strong>Electrical and Computer Engineering</strong>:</p>
+<ul>
+<li><strong>RF Systems &amp; Electromagnetics:</strong> Built practical, hands-on familiarity with impedance matching, filter topology (Chebyshev low-pass networks), and harmonic suppression required for FCC compliance—largely through empirical trial-and-error rather than closed-form design, which is exactly the gap I’d want graduate coursework to close.</li>
+<li><strong>Hardware Troubleshooting &amp; Diagnostics:</strong> Practiced a rigorous, bottom-up diagnostic approach—isolating issues across power supplies, local oscillators, mixer stages, and final amplification—even where I couldn’t always explain a failure from first principles.</li>
+<li><strong>Technical Communication:</strong> The ability to document and explain complex electromechanical systems to diverse audiences is foundational to academic authorship, lab leadership, and peer collaboration.</li>
+<li><strong>Amateur Radio Credentialing:</strong> Studying for and passing my <strong>Amateur Extra Class FCC License (AI5YD)</strong> gave me a working knowledge of electronics theory, though the license exam tests recall more than design capability—another reason I’m looking for more rigorous, formal instruction.</li>
+</ul>
+
+
+</section>
+
+ ]]></description>
+  <category>Hardware</category>
+  <category>RF &amp; Wireless</category>
+  <category>Amateur Radio</category>
+  <category>Soldering</category>
+  <category>Embedded Systems</category>
+  <guid>https://allhailthetail.github.io/quarto-blog/projects/qcx-mini.html</guid>
+  <pubDate>Mon, 02 Mar 2026 00:00:00 GMT</pubDate>
+  <media:content url="https://allhailthetail.github.io/quarto-blog/projects/assets/qcx-mini.png" medium="image" type="image/png" height="81" width="144"/>
+</item>
+<item>
+  <title>A Literate Pipeline for Morse Code Telemetry &amp; Signal Analysis</title>
+  <link>https://allhailthetail.github.io/quarto-blog/projects/cw-data-sci.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="project-motivation-when-signals-become-data" class="level2">
+<h2 class="anchored" data-anchor-id="project-motivation-when-signals-become-data">Project Motivation: When Signals Become Data</h2>
+<p><a href="https://github.com/allhailthetail/dsc-105-morse-project/tree/4e25e2f661efe2e8f311e4cc8816aa0af322e77e"><em>Project Repository:</em></a></p>
+<p>In continuous wave (CW) telegraphy, information is transmitted via discrete pulses of RF <a href="../projects/BoE.html">(or acoustic)</a> signals via a meticulously orchestrated sequence of carrier energy. Standing apart as one of the only direct human-digital communication methods that I can think of, these signals are mapped more abstractly to dots, dashes, and intervals of silence. These three symbols essentially compose the language of CW, which can then be used to transmit text-encoded messages over a variety of mediums only limited to the human imagination (see <a href="https://en.wikipedia.org/wiki/Jeremiah_Denton#Vietnam_War">Jerimiah Denton</a>). While human ears adapt naturally to erratic hand-keying rhythms and atmospheric fading, algorithmic decoders often fail when confronted with real-world timing jitter, drifting speeds, and non-standard spacing.</p>
+<p>For a semester-long project in <strong>DSC 105 (Introduction to Data Science)</strong>, I designed an end-to-end data pipeline to ingest, clean, normalize, and analyze Morse code transmission streams.</p>
+<p>Rather than isolating code into disconnected scripts and static notebooks, I implemented the entire workflow using <strong>literate programming</strong> in <code>EMACS</code>. The code, statistical transformations, and narrative documentation live in a unified, fully reproducible document—tracing the transformation of raw acoustic timing data into structured distributions and exploratory models.</p>
+<hr>
+</section>
+<section id="the-pipeline-architecture" class="level2">
+<h2 class="anchored" data-anchor-id="the-pipeline-architecture">The Pipeline Architecture</h2>
+<p>The pipeline ingests raw timing intervals, detects symbol boundaries, identifies transmission anomalies, and models operator rhythm consistency:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">%%{init: {'flowchart': {'nodeSpacing': 25, 'rankSpacing': 35, 'curve': 'basis'}, 'themeVariables': {'fontSize': '13px'}}}%%
+flowchart TD
+    A["Raw Transmission Data&lt;br/&gt;(Kaggle Dataset)"]
+    B["Polyglot Data Ingestion W/ EMACS"]
+    C["ETL (R::Seewave)&lt;br/&gt;- Delta timestamp extraction&lt;br/&gt;- Threshold filtering &amp; artifact removal"]
+    D["Structured Dataframe"]
+    E["Statistical Modeling &amp; Analysis&lt;br/&gt;- Dit/Dah clustering&lt;br/&gt;- WPM variance&lt;br/&gt;- Bioacoustic Indices&lt;br/&gt;- FFT&lt;br/&gt;"]
+    F["Rendered Deliverable"]
+    G["Reproducible Academic Report &amp; Visualizations"]
+
+    A --&gt; B --&gt; C --&gt; D --&gt; E --&gt; F --&gt; G
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="engineering-the-data-pipeline" class="level2">
+<h2 class="anchored" data-anchor-id="engineering-the-data-pipeline">Engineering the Data Pipeline</h2>
+<section id="the-timing-problem" class="level3">
+<h3 class="anchored" data-anchor-id="the-timing-problem">The Timing Problem</h3>
+<p>Under the standard <strong>PARIS</strong> benchmark, ideal Morse transmission follows strict proportional relationships based on a unit duration (<img src="https://latex.codecogs.com/png.latex?t">):</p>
+<ul>
+<li><strong>Dit (<img src="https://latex.codecogs.com/png.latex?%5Ccdot">):</strong> <img src="https://latex.codecogs.com/png.latex?1t"></li>
+<li><strong>Dah (<img src="https://latex.codecogs.com/png.latex?-">):</strong> <img src="https://latex.codecogs.com/png.latex?3t"></li>
+<li><strong>Intra-character space:</strong> <img src="https://latex.codecogs.com/png.latex?1t"></li>
+<li><strong>Inter-character space:</strong> <img src="https://latex.codecogs.com/png.latex?3t"></li>
+<li><strong>Inter-word space:</strong> <img src="https://latex.codecogs.com/png.latex?7t"></li>
+</ul>
+<p>In practice, physical keys, manual paddles, and atmospheric propagation introduce non-linear variations:</p>
+<ol type="1">
+<li><strong>Weighting Bias:</strong> Many operators transmit “heavy” or “light” code, skewing the mathematical <img src="https://latex.codecogs.com/png.latex?1:3"> dit-to-dah ratio.</li>
+<li><strong>Farnsworth Timing:</strong> Spacing between words or characters often expands while individual element speeds remain fast, confounding simple threshold filters.</li>
+<li><strong>Contact Bounce &amp; Chirp:</strong> Mechanical switches produce spurious microsecond pulses that must be distinguished from genuine dits.</li>
+</ol>
+</section>
+<section id="cleaning-feature-engineering" class="level3">
+<h3 class="anchored" data-anchor-id="cleaning-feature-engineering">Cleaning &amp; Feature Engineering</h3>
+<p>To process these irregular streams, the cleaning step converts raw high/low durations into normalized element arrays:</p>
+<ul>
+<li><strong>Outlier Truncation:</strong> Drops transients under <img src="https://latex.codecogs.com/png.latex?10%5Ctext%7B%20ms%7D"> caused by contact chatter or audio interface clipping.</li>
+<li><strong>Bimodal Duration Clustering:</strong> Rather than hardcoding millisecond thresholds, the pipeline fits bimodal distributions to separate dits from dahs dynamically, adapting as the effective transmission speed (WPM) drifts across a session.</li>
+<li><strong>Ratio Tracking:</strong> Computes rolling moving averages of the element ratio (<img src="https://latex.codecogs.com/png.latex?%5Cfrac%7B%5Cbar%7Bt%7D_%7B%5Ctext%7Bdah%7D%7D%7D%7B%5Cbar%7Bt%7D_%7B%5Ctext%7Bdit%7D%7D%7D">) to identify operator fatigue and mechanical key misalignments over time.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="reproducibility-through-literate-programming" class="level2">
+<h2 class="anchored" data-anchor-id="reproducibility-through-literate-programming">Reproducibility Through Literate Programming</h2>
+<p>A core objective was treating data science as an auditable scientific document rather than a collection of ephemeral scripts.</p>
+<ul>
+<li><strong>Polyglot Execution:</strong> Leveraged literate programming blocks to use the right tool for each phase—fast shell utilities for raw log splitting, Python for parsing state machines, and R (leveraging <code>tidyverse</code> and <code>ggplot2</code>) for statistical distribution analysis.</li>
+<li><strong>Dynamic Dependency Graph:</strong> Data transformations flow strictly from raw inputs to processed tables and output graphics. Changing an upstream filtering threshold automatically recomputes all downstream descriptive statistics and regenerated figures upon compilation.</li>
+<li><strong>Executable Documentation:</strong> Methodological explanations sit directly alongside the implementation, making data anomalies traceable down to the specific line of code that parsed them.</li>
+</ul>
+<hr>
+</section>
+<section id="key-findings-statistical-insights" class="level2">
+<h2 class="anchored" data-anchor-id="key-findings-statistical-insights">Key Findings &amp; Statistical Insights</h2>
+<ul>
+<li><strong>Information Entropy vs.&nbsp;Symbol Duration:</strong> Visualizing the character frequencies against total transmission time provided empirical validation of Morse’s prefix-coding efficiency—demonstrating how English character distributions align with minimal symbol weights.</li>
+<li><strong>Human Jitter Distributions:</strong> Machine-generated CW exhibited tight, near-Dirac pulse distributions, whereas manual keying generated wide log-normal tails on intra-character spaces—highlighting the exact threshold where software decoders lose symbol framing.</li>
+<li><strong>Speed Adaptation:</strong> The pipeline successfully tracked transmission bursts from 12 WPM to 24 WPM without losing symbol demarcation, validating the adaptive clustering approach over static windowing.</li>
+</ul>
+<hr>
+</section>
+<section id="relevance-to-future-studies-systems-engineering" class="level2">
+<h2 class="anchored" data-anchor-id="relevance-to-future-studies-systems-engineering">Relevance to Future Studies &amp; Systems Engineering</h2>
+<p>This project reinforced foundational principles across data science, computing, and communications:</p>
+<ul>
+<li><strong>Reproducible Research Methods:</strong> Mastering literate workflows established rigorous documentation and reproducibility practices essential for graduate-level research publications.</li>
+<li><strong>Signal Detection &amp; Classification:</strong> Formulating symbol parsing as a time-series clustering problem directly translates to digital signal processing and machine learning on sensor telemetry.</li>
+<li><strong>Information Theory in Practice:</strong> Hands-on exploration of variable-length encoding, symbol timing entropy, and channel noise deepened my theoretical grounding in digital communication systems.</li>
+</ul>
+<p>Among academics, there seems to be much interest in literate programming in the AI era. I was honored to have the opportunity to attempt to present all that I learned about literate programming at the University of Oklahoma Data Science Workshop conference, which can be viewed <a href="https://mediasite.ou.edu/Mediasite/Channel/odsw/watch/19f27b09eff948989e0cd6a8754681a61d?sortBy=most-recent">here</a>, accompanying follow-along tutorial <a href="https://allhailthetail.github.io/polyglot-workshop/">here</a>. It was highly unusual to allow an undergraduate student speak at these conferences, which alone speaks to the interest in the topic. My interpretation is that since AI currently communicates fluently in Markdown and plaintext, doing research in that same style and avoiding compiled files (DOCX, Excel, PDF, etc) in the project’s main phase makes using AI as a research tool more feasible. I very much enjoyed presenting on this topic and gaining much-needed experience in public speaking.</p>
+<hr>
+
+
+</section>
+
+ ]]></description>
+  <category>Data Science</category>
+  <category>Literate Programming</category>
+  <category>R</category>
+  <category>Python</category>
+  <category>Signal Processing</category>
+  <category>Amateur Radio</category>
+  <guid>https://allhailthetail.github.io/quarto-blog/projects/cw-data-sci.html</guid>
+  <pubDate>Tue, 09 Dec 2025 00:00:00 GMT</pubDate>
+  <media:content url="https://allhailthetail.github.io/quarto-blog/projects/assets/cw-key.png" medium="image" type="image/png" height="81" width="144"/>
+</item>
+<item>
+  <title>BoEnanna-Pi: Continuous Servos to Acoustic Signal Processing</title>
+  <link>https://allhailthetail.github.io/quarto-blog/projects/BoE.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="project-context-building-the-foundation-for-a-vision" class="level2">
+<h2 class="anchored" data-anchor-id="project-context-building-the-foundation-for-a-vision">Project Context: Building the Foundation for (a) Vision</h2>
+<p>A peer was developing a mobile robot intended to navigate autonomously using computer vision, but the platform needed a brain upgrade: an onboard single-board computer capable of running lightweight vision models while maintaining reliable hardware control.</p>
+<p>I took ownership of the entire hardware integration layer and motion stack. Beyond writing the software, this meant architecting the physical build from the ground up: sourcing compatible hardware, soldering headers, 3D printing custom mounting brackets, and sizing an isolated onboard battery system.</p>
+<p>On top of the physical platform, I wrote a dependable <strong>C++ driver and motion daemon</strong> to handle hardware timing, calibration, and differential steering under the hood—giving my classmate a clean, decoupled software interface so he could focus entirely on camera pipelines and vision models.</p>
+<p>However, as summer’s end neared and this project was sunset by my peer, the project took a different direction, and ultimately cascaded into an ongoing learning adventure relating to the topics of digital signal processing and RF communications more broadly.</p>
+<hr>
+</section>
+<section id="hardware-and-driver-development" class="level2">
+<h2 class="anchored" data-anchor-id="hardware-and-driver-development">Hardware and Driver Development</h2>
+<section id="system-overview" class="level3">
+<h3 class="anchored" data-anchor-id="system-overview">System Overview</h3>
+<p>Transforming a hobbyist chassis into a stable Linux-driven mobile platform required thougtful planning around mechanical constraints, wiring, and electrical isolation:</p>
+<ul>
+<li><strong>Procurement &amp; Physical Layout:</strong> Selected and sourced the Raspberry Pi, PCA9685 16-channel 12-bit PWM HAT, and continuous rotation servos, laying out the chassis geometry to keep the center of gravity low and stable.</li>
+<li><strong>Soldering &amp; Board Prep:</strong> Populated and soldered the multi-pin header arrays on the PWM HAT and custom power leads, ensuring reliable mechanical joints that would reliably deliver signal between the Raspberry Pi board and HAT.</li>
+<li><strong>Custom 3D-Printed Mounts:</strong> Procured and printed (additive manufacturing) custom mounting brackets and standoffs to secure the Raspberry Pi, camera module, and battery bank to the aluminum Boe-Bot chassis without shorting against the metal frame.</li>
+<li><strong>Power Budgeting &amp; Electrical Isolation:</strong> High-torque servos draw significant stall current and inject inductive electrical noise onto supply rails. To prevent voltage sags from browning out the Raspberry Pi during sudden motor acceleration, I designed around an appropriate power topology with isolated rails:
+<ul>
+<li>An onboard high-current 5V USB battery bank dedicated to the Raspberry Pi logic.</li>
+<li>An isolated, filtered 5–6V battery supply feeding the high-draw servo power rail on the HAT.</li>
+</ul></li>
+</ul>
+<hr>
+</section>
+<section id="how-continuous-servos-work" class="level3">
+<h3 class="anchored" data-anchor-id="how-continuous-servos-work">How Continuous Servos Work</h3>
+<p>Standard hobby servos use internal potentiometers for closed-loop angular positioning (<img src="https://latex.codecogs.com/png.latex?0%5E%5Ccirc"> to <img src="https://latex.codecogs.com/png.latex?180%5E%5Ccirc">). Continuous rotation servos remove the mechanical stops and disconnect the potentiometer, turning pulse width into <strong>rotational velocity and direction</strong>:</p>
+<ul>
+<li><strong>Neutral / Stop (<img src="https://latex.codecogs.com/png.latex?%5Capprox%201500%5C%20%5Cmu%5Ctext%7Bs%7D">):</strong> Signals the internal H-bridge to stop motor rotation.</li>
+<li><strong>Clockwise (<img src="https://latex.codecogs.com/png.latex?%5Capprox%201000%5C%20%5Cmu%5Ctext%7Bs%7D">):</strong> Full rotational speed in one direction.</li>
+<li><strong>Counter-Clockwise (<img src="https://latex.codecogs.com/png.latex?%5Capprox%202000%5C%20%5Cmu%5Ctext%7Bs%7D">):</strong> Full rotational speed in the opposite direction.</li>
+</ul>
+<p>Because potentiometers drift slightly between individual units, software calibration was required to define a consistent “deadband” window around neutral—ensuring the chassis doesn’t crawl across the floor while idling.</p>
+<hr>
+</section>
+<section id="interfacing-with-the-servo-hat-in-c" class="level3">
+<h3 class="anchored" data-anchor-id="interfacing-with-the-servo-hat-in-c">Interfacing with the Servo HAT in C++</h3>
+<p>Driving pulse-width modulation directly off standard Linux GPIO pins often results in timing jitter due to OS process scheduling. To ensure clean signals, the servos and camera pan mount are offloaded to an auxiliary <strong>PCA9685 16-channel PWM driver HAT</strong> connected via I²C. During the project, debugging and testing was conducted over WiFi on my home network to the Pi via an SSH terminal. Past experience in CLI-driven Linux was invaluable at this stage of the project. Local development was done on my laptop and successive tests shipped to the bot via <a href="https://rsync.samba.org/">rsync</a>.</p>
+</section>
+<section id="pulling-in-system-headers" class="level3">
+<h3 class="anchored" data-anchor-id="pulling-in-system-headers">Pulling in System Headers</h3>
+<p>Rather than pulling in bloated third-party libraries, the C++ driver I wrote for the bot interacts directly with Linux kernel I²C character devices:</p>
+<ul>
+<li>Used <code>&lt;linux/i2c-dev.h&gt;</code>, <code>&lt;sys/ioctl.h&gt;</code>, and standard POSIX-compatible file calls (<code>open</code>, <code>write</code>, <code>close</code>).</li>
+<li>Initialized the I²C bus on <code>/dev/i2c-1</code> and set the target slave address.</li>
+<li>Configured the internal oscillator prescaler for a standard <strong>50 Hz PWM frequency</strong> (<img src="https://latex.codecogs.com/png.latex?20%20%5Ctext%7Bms%7D"> period) and wrote 12-bit channel counter values.</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode cpp code-with-copy"><code class="sourceCode cpp"><span id="cb1-1"><span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">void</span> RobotChassis<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span>driveForward<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">()</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb1-2">    setServoPulse<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">(</span>LEFT_SERVO_PIN<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">,</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1300</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">);</span>   <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">// Left wheel forward</span></span>
+<span id="cb1-3">    setServoPulse<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">(</span>RIGHT_SERVO_PIN<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">,</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1700</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">);</span>  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">// Right wheel mirrored</span></span>
+<span id="cb1-4"><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span></span>
+<span id="cb1-5"></span>
+<span id="cb1-6"><span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">void</span> RobotChassis<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span>pivotLeft<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">()</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb1-7">    setServoPulse<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">(</span>LEFT_SERVO_PIN<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">,</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1700</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">);</span>   <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">// Left wheel reverse</span></span>
+<span id="cb1-8">    setServoPulse<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">(</span>RIGHT_SERVO_PIN<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">,</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1700</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">);</span>  <span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">// Right wheel forward</span></span>
+<span id="cb1-9"><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span></span>
+<span id="cb1-10"></span>
+<span id="cb1-11"><span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">void</span> RobotChassis<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">::</span>halt<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">()</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb1-12">    setServoPulse<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">(</span>LEFT_SERVO_PIN<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">,</span> CALIBRATED_STOP<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">);</span></span>
+<span id="cb1-13">    setServoPulse<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">(</span>RIGHT_SERVO_PIN<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">,</span> CALIBRATED_STOP<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">);</span></span>
+<span id="cb1-14"><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span></span></code></pre></div></div>
+<p>Wrapping this inside a clean <code>C++</code> driver class provided RAII (Resource Acquisition Is Initialization) resource cleanup on shutdown and prevented runaway motors if an upstream process crashed. The importance of writing safe and stable software when working with robotics became very clear here. In larger industrial projects, a runaway process could have catastrophic consequences. I gained an awareness of RTOS systems and custom compilers that can be mathematically proven to prohibit accidentally writing non-terminating loops, a routine performing infinite recursion, etc.</p>
+<p><a href="https://github.com/allhailthetail/boenanna-pi">GitHub::Chassis Driver Repository</a></p>
+<hr>
+</section>
+<section id="driver-demo" class="level3">
+<h3 class="anchored" data-anchor-id="driver-demo">Driver Demo</h3>
+<p>Here is a quick run of the driver test sequence in my home lab. The script validates forward/reverse drive, rotational pivots, and camera pan articulation:</p>
+<div class="quarto-video ratio ratio-16x9"><iframe data-external="1" src="https://www.youtube.com/embed/iw_Xe_JajT4" title="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe></div>
+<hr>
+</section>
+</section>
+<section id="from-motor-signals-to-acoustic-radio-dsp" class="level2">
+<h2 class="anchored" data-anchor-id="from-motor-signals-to-acoustic-radio-dsp">From Motor Signals to Acoustic Radio &amp; DSP</h2>
+<p>While the robotic platform gave me solid experience with hardware prototyping and kernel I/O, manipulating precise pulse timing sparked a broader question: how can audio signals be used as an intuitive sandbox for learning the fundamentals of wireless digital communications?</p>
+<p>RF hardware involves parasitic reactances, impedance matching, and transmission line theory that can obscure algorithmic understanding during initial prototyping (though in subsequent projects I’ve expanded my knowledge in this domain, also). Audio, by contrast, operates as an accessible physical baseband. Acoustic Continuous Wave (CW / Morse code) is the foundation of digital communications: an asynchronous binary On-Off Keying (OOK) system that achieves near-optimal spectral efficiency in high-noise channels.</p>
+<p>From a computer science perspective, Morse code is an early implementation of variable-length prefix coding (conceptually anticipating Huffman coding), where symbol durations inversely correlate with character frequencies in human language.</p>
+<p>This realization led directly to my next project: AudioCW, an acoustic transceiver interface designed to explore software-defined signal generation, audio stream manipulation, and symbol decoding.</p>
+<hr>
+<section id="audiocw-interface-demo" class="level3">
+<h3 class="anchored" data-anchor-id="audiocw-interface-demo">AudioCW Interface Demo</h3>
+<p>The interface handles text-to-tone serialization, configurable Words-Per-Minute (WPM) symbol timing, and sidetone pitch adjustment (typically 700 Hz) with live visual feedback:</p>
+<div class="quarto-video ratio ratio-16x9"><iframe data-external="1" src="https://www.youtube.com/embed/ZHlFYsn0uYY" title="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe></div>
+<p><a href="https://github.com/allhailthetail/audiocw">GitHub::Transceiver Repository</a></p>
+</section>
+</section>
+<section id="key-takeaways-research-trajectory" class="level2">
+<h2 class="anchored" data-anchor-id="key-takeaways-research-trajectory">Key Takeaways &amp; Research Trajectory</h2>
+<ul>
+<li><p>Connecting physical embedded drivers to signal synthesis has broadened my academic trajectory towards future studies in Electrical and Computer Engineering.</p></li>
+<li><p>Full-Stack Prototyping: Experience spanning the entire hardware stack - component selection, manual soldering, power isolation, and 3D modeling—up to kernel ioctl calls in <code>C++</code>.</p></li>
+<li><p>Foundations of Digital Signal Processing: Transitioned from square-wave actuator control to audio frequency synthesis, exploring more deeply concepts relating to radio technology, RF propagation, and filter design.</p></li>
+<li><p>Communications &amp; Information Theory: Investigated bandwidth-to-noise tradeoffs and prefix coding in minimalist digital modes.</p></li>
+<li><p>FCC Amateur Extra Licensure: Pursuing the electronics and wave propagation principles surrounding this project pushed me to study advanced RF systems, antenna design, and transmission theory, resulting in earning my Amateur Extra Class License that same summer (FCC::AI5YD).</p></li>
+</ul>
+<section id="vision-for-this-project" class="level3">
+<h3 class="anchored" data-anchor-id="vision-for-this-project">Vision for this project:</h3>
+<p>Like many projects, it’s hard to gauge completion. This turned out to be a very educational and interesting project with tons of potential. Transmitting audio for digital communication and/or remote sensing with either audible or sub-audible tones is used across many industries and areas of science/development. Similarly, signal processing is especially relevant in speech-to-text AI workflows (see ChatGPT Live, and others); DSP allows voice to be efficiently filtered out from background noise, which translates to less heavy processing by LLMs when receiving user input.</p>
+<p>Any and all of these areas remain relevant to this project, which continues to serve as a “toy example” to learn more about these areas in a stripped down environment. I continue to find that tailored, digestible, hands-on projects such as this make for an interesting vehicle for learning core fundamentals about what I consider to be very complex topics. Once I’ve sufficiently mastered these topics, I’d very much like to contribute end-to-end hardware projects and code for future learners in this same style.</p>
+
+
+</section>
+</section>
+
+ ]]></description>
+  <category>Robotics</category>
+  <category>C++</category>
+  <category>Embedded Systems</category>
+  <category>Linux</category>
+  <category>DSP</category>
+  <category>Amateur Radio</category>
+  <guid>https://allhailthetail.github.io/quarto-blog/projects/BoE.html</guid>
+  <pubDate>Sun, 18 May 2025 00:00:00 GMT</pubDate>
+  <media:content url="https://allhailthetail.github.io/quarto-blog/projects/assets/boe-chassis.png" medium="image" type="image/png" height="81" width="144"/>
+</item>
+</channel>
+</rss>
