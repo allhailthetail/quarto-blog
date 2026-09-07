@@ -12,7 +12,7 @@ about:
       href: https://github.com/allhailthetail
     - icon: file-earmark-pdf
       text: Resume
-      href: ./assets/resume.pdf
+      href: https://github.com/allhailthetail/quarto-blog/blob/main/assets/resume.pdf
     - icon: envelope
       text: Email
       href: mailto:matthewyounger33@gmail.com
